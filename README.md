@@ -33,3 +33,7 @@ Quite similarly you can do the same with comments `https://www.reddit.com/r/Musi
 ## Data procesing
 Since most of the data is followed with some bloat form Reddit API my python code will be responcible for projecting fetched JSON documents into others more usable documents.  
 Procesed JSON documents are going to be dumped into mongo DB via aforementioned python code using basic MongoDB driver [Pymongo](https://www.mongodb.com/docs/drivers/pymongo/) since Object-Document mappers are mostly forbiden and quite frankly usualy a pile of depricated and outdated hot garbage.
+
+### Known limitations
+
+Reddit API is limmiting its usage to up to 60 requests per minute, with 100 items per request.
