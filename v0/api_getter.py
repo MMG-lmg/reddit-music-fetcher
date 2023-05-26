@@ -82,7 +82,15 @@ def get_comments_praw(post_id,client_id,client_secret):
     for top_level_comment in submission.comments:
         type(top_level_comment)
         print(top_level_comment)
-        
+      
+def get_user_details(username):
+    try:
+        base_url = f'https://www.reddit.com/user/{username}/about.json'
+        request = request = requests.get(base_url, headers = {'User-agent': 'yourbot'})
+    except Exception as e:
+        print(e)
+        print('An Error Occured')
+    return request.json()
 """   
 r = get_multiple_posts(1940,subreddit,listing,limit,timeframe)
 counter = 0
