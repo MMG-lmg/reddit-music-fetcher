@@ -24,6 +24,7 @@ def process_post(post_data):
     post.is_original_content = post_data['is_original_content']
     post.score = post_data['score']
     post.created_utc = post_data['created_utc']
+    post.awards=[]
     for award_data in post_data['all_awardings']:
         award = types.Award()
         award.name = award_data['name']
@@ -61,6 +62,7 @@ def process_comment(comment_data):
     comment.author = comment_data['author']
     comment.created_utc = comment_data['created_utc']
     comment.total_awards = comment_data['total_awards_received']
+    comment.awards=[]
     for award_data in comment_data['all_awardings']:
         award = types.Award()
         award.name = award_data['name']
@@ -73,7 +75,7 @@ def process_comment(comment_data):
     comment.upvotes = comment_data['ups']
     comment.parent_id = comment_data['link_id']
     comment.body = comment_data['body']
-    comment.upvote_ratio = comment_data['upvote_ratio']
+    comment.controversiality = comment_data['controversiality']
     comment.url = "https://www.reddit.com" + comment_data['permalink']
     comment.score = comment_data['score']
     return comment;
@@ -86,11 +88,22 @@ def process_user(user_data):
     user.mod = user_data['is_mod']
     user.gold = user_data['is_gold']
     user.awarder_karma =user_data['awarder_karma'] 
+    user.awardee_karma = user_data['awardee_karma']
     user.total_karma = user_data['total_karma'] 
     user.link_karma = user_data['link_karma']
     user.name = user_data['name']
     user.created_utc = user_data['created_utc']
     user.comment_karma = user_data['comment_karma']
+    user.is_suspended = False;
+    return user
+
+def process_suspended_user(user_data):
+    user = types.User()
+    user.is_suspended = True;
+    user.name = user_data['name']
+    user.awarder_karma =user_data['awarder_karma'] 
+    user.awardee_karma = user_data['awardee_karma']
+    user.total_karma = user_data['total_karma'] 
     return user
     
 def prepare_user_ids(comments):

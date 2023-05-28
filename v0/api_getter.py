@@ -40,6 +40,7 @@ def get_multiple_posts(number,subreddit,listing,limit,timeframe):
     return posts
 
 def get_first_comments(subreddit,post_id):
+    print(f'Fetching first comments from r/{subreddit} for post {post_id}')
     try:
         base_url = f'https://www.reddit.com/r/{subreddit}/comments/{post_id}.json'
         request = requests.get(base_url, headers = {'User-agent': 'yourbot'})
@@ -48,6 +49,7 @@ def get_first_comments(subreddit,post_id):
     return request.json()
 
 def get_more_comments(post_id,more_ids):
+    print(f'Fetching more comments from for post {post_id}')
     #more_ids => comma separated list of links
     fullname = 't3_'+post_id
     try:
@@ -84,6 +86,7 @@ def get_comments_praw(post_id,client_id,client_secret):
         print(top_level_comment)
       
 def get_user_details(username):
+    print(f'Fetching details from for user {username}')
     try:
         base_url = f'https://www.reddit.com/user/{username}/about.json'
         request = request = requests.get(base_url, headers = {'User-agent': 'yourbot'})

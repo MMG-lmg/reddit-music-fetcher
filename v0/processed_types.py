@@ -37,7 +37,7 @@ class Comment:
     awards = [Award]
     score: int
     body: str
-    upvote_ratio : float
+    controversiality : int
     upvotes: int
     downvotes: int
     url:str
@@ -50,8 +50,10 @@ class User:
     gold:bool
     total_karma:int
     awarder_karma:int
+    awardee_karma:int
     link_karma:int
     name:str
     created_utc:int
     comment_karma:int
+    is_suspended:bool
     
