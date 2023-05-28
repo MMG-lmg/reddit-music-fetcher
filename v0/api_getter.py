@@ -9,7 +9,7 @@ listing = 'top' # controversial, best, hot, new, random, rising, top
 def get_posts(subreddit,listing,limit,timeframe):
     try:
         base_url = f'https://www.reddit.com/r/{subreddit}/{listing}.json?limit={limit}&t={timeframe}'
-        request = requests.get(base_url, headers = {'User-agent': 'yourbot'})
+        request = requests.get(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print('An Error Occured')
     return request.json()
@@ -17,7 +17,7 @@ def get_posts(subreddit,listing,limit,timeframe):
 def get_sequential_posts(subreddit,listing,limit,timeframe,after,count):
     try:
         base_url = f'https://www.reddit.com/r/{subreddit}/{listing}.json?limit={limit}&t={timeframe}&after={after}&count={count}'
-        request = requests.get(base_url, headers = {'User-agent': 'yourbot'})
+        request = requests.get(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print('An Error Occured')
     return request.json()
@@ -43,19 +43,19 @@ def get_first_comments(subreddit,post_id):
     print(f'Fetching first comments from r/{subreddit} for post {post_id}')
     try:
         base_url = f'https://www.reddit.com/r/{subreddit}/comments/{post_id}.json'
-        request = requests.get(base_url, headers = {'User-agent': 'yourbot'})
+        request = requests.get(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print("Error occured")
     return request.json()
 
-def get_more_comments(post_id,more_ids):
+def get_more_comments(post_id,more_ids,only_requested='true'):
     print(f'Fetching more comments from for post {post_id}')
     #more_ids => comma separated list of links
     fullname = 't3_'+post_id
     try:
-        base_url = f'https://api.reddit.com/api/morechildren?api_type=json&showmore=true&link_id={fullname}&children={more_ids}'
+        base_url = f'https://api.reddit.com/api/morechildren?api_type=json&showmore=true&link_id={fullname}&children={more_ids}&limit_children={only_requested}'
         print(base_url)
-        request = requests.post(base_url, headers = {'User-agent': 'yourbot'})
+        request = requests.post(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print("Error occured")
     return request.json()
@@ -74,7 +74,7 @@ def get_comments_praw(post_id,client_id,client_secret):
     reddit = praw.Reddit(
         client_id=client_id,
         client_secret=client_secret,
-        user_agent="script by u/ludikonj35",
+        user_agent="r/music-fetcher by u/ludikonj35",
     )
     print("created instance, fetching post")
     submission = reddit.submission(post_id)
@@ -89,7 +89,7 @@ def get_user_details(username):
     print(f'Fetching details from for user {username}')
     try:
         base_url = f'https://www.reddit.com/user/{username}/about.json'
-        request = request = requests.get(base_url, headers = {'User-agent': 'yourbot'})
+        request = request = requests.get(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except Exception as e:
         print(e)
         print('An Error Occured')
