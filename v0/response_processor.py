@@ -1,4 +1,4 @@
-from . import types
+import processed_types as types
 import re
 def prepare_more_comments(comments_data,more_comment_limit):
     for comment in comments_data[1]['data']['children']:
@@ -12,7 +12,10 @@ def process_post(post_data):
     post = types.Post()
     #post[data]
     post.title = post_data['title']
-    post.flair = post_data['link_flair_richtext'][0]['t']
+    if(post_data['link_flair_richtext'] != []) : 
+        post.flair = post_data['link_flair_richtext'][0]['t']
+    else:
+        post.flair = 'none'
     post.subreddit = post_data['subreddit']
     post.downvotes = post_data['downs']
     post.upvotes = post_data['ups']
@@ -43,19 +46,12 @@ def process_post(post_data):
 
 def process_music_title(title):
     title = title.replace(',', '/')
-    pattern =  pattern = re.compile(r"([A-Za-z0-9]+( [A-Za-z0-9]+)+)\s+-\s+([A-Za-z0-9]+( [A-Za-z0-9]+)+)\s+\[[A-Za-z0-9](/[A-Za-z0-9])*\]\(2023\).*", re.IGNORECASE)
-    if re.match(pattern, title):
-        artist = title.split('-')[0]
-        song_title = title.split('-')[1].split('[')[0]
-        genres= []
-        if '/' in title.split('-')[1].split('[')[0]:
-            problematic_genres = title.split('-')[1].split('[')[1]
-            problematic_genres = problematic_genres.replace(']',' ')
-            problematic_genres = problematic_genres.strip()
-            for word in problematic_genres.split['/']:
-                genres.append(word)
-        else:
-            genres.append(title.split('-')[1].split('[')[1])
+    pattern = r"^([^-/]+)\s*-\s*([^-/]+)\s*\[\s*([^-/]+(?:\s*/\s*[^-/]+)*)\]\s*(.*)$"
+    match = re.match(pattern, title)
+    if match:
+        artist = match.group(1)
+        song_title = match.group(2)
+        genres = match.group(3).split('/')
         return True,artist,song_title,genres
     return False,'','',[]
     

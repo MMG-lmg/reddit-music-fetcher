@@ -1,19 +1,35 @@
+import response_processor
 import api_getter
 import auth
 import time
+import json
+import json_io 
 reddit_username = '';
 reddit_password = '';
 
 def main():
 
-    post_set = api_getter.get_posts('music','top',1,'top')
-    print(post_set)
-    post_id = ''
-    for post in post_set['data']['children']:
-        print(post['data']['title'] + ' - ' + post['data']['id'])
-        post_id = post['data']['id']
-    time.sleep(2)
+    post_sets = api_getter.get_multiple_posts(number = 350,subreddit='music',listing='top',limit = 100, timeframe='all')
+    print(type(post_sets))
     
+    post_ids = []
+    converted_posts=[]
+    for post_set in post_sets:
+        for post in post_set['data']['children']:
+            print(post['data']['title'] + ' - ' + post['data']['id'])
+            post_ids.append(post['data']['id'])
+            converted_posts.append(response_processor.process_post(post['data']))
+    print(post_ids)
+    print(len(post_ids))
+    #time.sleep(2)
+    
+    json_io.store_data(converted_posts)
+    
+    """
+    for post_set in post_sets:
+        for post in post_set:
+    """
+    """
     more_comment_limit = 100
     more_comment_ids = "";
     json = api_getter.get_first_comments('music',post_id)
@@ -30,7 +46,7 @@ def main():
     time.sleep(2)
     more_comments_json = api_getter.get_more_comments(post_id,more_comment_ids)
     print(more_comments_json) 
-    
+    """
 
 if __name__ == "__main__":
     main()
