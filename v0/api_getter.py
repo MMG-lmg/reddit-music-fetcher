@@ -12,7 +12,11 @@ def get_posts(subreddit,listing,limit,timeframe):
         request = requests.get(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print('An Error Occured')
-    return request.json()
+    try:
+        return request.json()
+    except Exception as e:
+        print(e)
+        print('An Json conversion error Occured') 
 
 def get_sequential_posts(subreddit,listing,limit,timeframe,after,count):
     try:
@@ -20,7 +24,11 @@ def get_sequential_posts(subreddit,listing,limit,timeframe,after,count):
         request = requests.get(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print('An Error Occured')
-    return request.json()
+    try:
+        return request.json()
+    except Exception as e:
+        print(e)
+        print('An Json conversion error Occured') 
 
 def get_multiple_posts(number,subreddit,listing,limit,timeframe):
     print(f'Fetching {number} posts from r/{subreddit}')
@@ -46,7 +54,11 @@ def get_first_comments(subreddit,post_id):
         request = requests.get(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print("Error occured")
-    return request.json()
+    try:
+        return request.json()
+    except Exception as e:
+        print(e)
+        print('An Json conversion error Occured') 
 
 def get_more_comments(post_id,more_ids,only_requested='true'):
     print(f'Fetching more comments from for post {post_id}')
@@ -58,7 +70,11 @@ def get_more_comments(post_id,more_ids,only_requested='true'):
         request = requests.post(base_url, headers = {'User-agent': 'r/music-fetcher by u/ludikonj35'})
     except:
         print("Error occured")
-    return request.json()
+    try:
+        return request.json()
+    except Exception as e:
+        print(e)
+        print('An Json conversion error Occured') 
 
 def get_comments_auth(post_id,sort,auth_token,limit=100,threaded = 'false'):
     try:
@@ -93,7 +109,11 @@ def get_user_details(username):
     except Exception as e:
         print(e)
         print('An Error Occured')
-    return request.json()
+    try:
+        return request.json()
+    except Exception as e:
+        print(e)
+        print('An Json conversion error Occured')   
 """   
 r = get_multiple_posts(1940,subreddit,listing,limit,timeframe)
 counter = 0
