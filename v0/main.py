@@ -9,7 +9,7 @@ reddit_password = '';
 
 def main():
 
-    post_sets = api_getter.get_multiple_posts(number = 2500,subreddit='music',listing='top',limit = 100, timeframe='month')
+    post_sets = api_getter.get_multiple_posts(number = 6500,subreddit='music',listing='top',limit = 100, timeframe='all')
     print(type(post_sets))
     
     post_ids = []
