@@ -50,7 +50,7 @@ for count in range(1,len(comment_data)):
     comment = comment_data[count-1]
     #process author
     if comment["author"] != '[deleted]':
-        author = post_user_dict.get(comment["author"], False)
+        author = comment_user_dict.get(comment["author"], False)
         if author != False:
             comment["author"] = author
         else: 
