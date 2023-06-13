@@ -1,0 +1,479 @@
+db.getCollection("post_data").aggregate([
+{
+         $addFields: {
+             dateField: { $toDate: { $multiply: [ "$created_utc", 1000 ] } }
+             //totalCoins: { $sum: {$multiply: ["$awards.coin_price", "$awards.count"]} }
+             }
+         
+},
+{
+        $match: {
+            dateField: { $gte: ISODate("2019-01-01"), $lt: ISODate("2023-01-01") },
+            total_awards: {$gte: 1}
+            
+        }
+},
+    {
+        $lookup:
+         {
+           from:"user_data",
+           localField: "author",
+           foreignField: "name",
+           as: "users"
+           
+         }
+    },
+    {
+        $unwind: "$users"
+    },
+    {
+        $addFields:{
+           upDownRangePost: {
+               $subtract:["$upvotes", "$downvotes"]
+           },
+           totalKarma: "$users.total_karma",
+           userCommentKarma: "$users.comment_karma"
+        }
+    },
+    {
+        $group:{
+            _id: "$id",
+            upDownRangePost: {$addToSet: "$upDownRangePost"},
+            totalKarma: {$addToSet: "$totalKarma"},
+            userCommentKarma: {$addToSet: "$userCommentKarma"},
+            percentilleUserCommentKarma: {$addToSet: {$multiply: [{$divide:[ "$totalKarma", {$cond: [ { $ne: [ "$userCommentKarma", 0 ] }, "$userCommentKarma", null ]}]}, 100]}},
+            percentilleTotalPostKarma: {$addToSet: {$multiply: [{$divide:[ "$totalKarma", "$upDownRangePost"]}, 100]}},
+            percentilleCommentPostKarma: {$addToSet: {$multiply: [{$divide:[ "$userCommentKarma", "$upDownRangePost"]}, 100]}}
+        }
+    },
+    { $sort: {percentilleCommentPostKarma: 1} }
+]).explain("executionStats")
+
+
+
+====================================================================
+
+
+
+
+
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.post_data",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+                        "total_awards" : {
+                            "$gte" : 1.0
+                        }
+                    },
+                    "queryHash" : "2ABCE01D",
+                    "planCacheKey" : "2ABCE01D",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "downvotes" : 1.0,
+                            "id" : 1.0,
+                            "totalKarma" : 1.0,
+                            "upDownRangePost" : 1.0,
+                            "upvotes" : 1.0,
+                            "userCommentKarma" : 1.0,
+                            "users.comment_karma" : 1.0,
+                            "users.total_karma" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "filter" : {
+                                "total_awards" : {
+                                    "$gte" : 1.0
+                                }
+                            },
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 462.0,
+                    "executionTimeMillis" : 10643.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "nReturned" : 462.0,
+                        "executionTimeMillisEstimate" : 1.0,
+                        "works" : 991.0,
+                        "advanced" : 462.0,
+                        "needTime" : 528.0,
+                        "needYield" : 0.0,
+                        "saveState" : 1.0,
+                        "restoreState" : 1.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "downvotes" : 1.0,
+                            "id" : 1.0,
+                            "totalKarma" : 1.0,
+                            "upDownRangePost" : 1.0,
+                            "upvotes" : 1.0,
+                            "userCommentKarma" : 1.0,
+                            "users.comment_karma" : 1.0,
+                            "users.total_karma" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "filter" : {
+                                "total_awards" : {
+                                    "$gte" : 1.0
+                                }
+                            },
+                            "nReturned" : 462.0,
+                            "executionTimeMillisEstimate" : 1.0,
+                            "works" : 991.0,
+                            "advanced" : 462.0,
+                            "needTime" : 528.0,
+                            "needYield" : 0.0,
+                            "saveState" : 1.0,
+                            "restoreState" : 1.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 989.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(462),
+            "executionTimeMillisEstimate" : NumberLong(1)
+        },
+        {
+            "$addFields" : {
+                "dateField" : {
+                    "$convert" : {
+                        "input" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                {
+                                    "$const" : 1000.0
+                                }
+                            ]
+                        },
+                        "to" : {
+                            "$const" : "date"
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(462),
+            "executionTimeMillisEstimate" : NumberLong(4)
+        },
+        {
+            "$match" : {
+                "$and" : [
+                    {
+                        "dateField" : {
+                            "$gte" : ISODate("2019-01-01T00:00:00.000+0000")
+                        }
+                    },
+                    {
+                        "dateField" : {
+                            "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                        }
+                    }
+                ]
+            },
+            "nReturned" : NumberLong(368),
+            "executionTimeMillisEstimate" : NumberLong(5)
+        },
+        {
+            "$lookup" : {
+                "from" : "user_data",
+                "as" : "users",
+                "localField" : "author",
+                "foreignField" : "name",
+                "unwinding" : {
+                    "preserveNullAndEmptyArrays" : false
+                }
+            },
+            "totalDocsExamined" : NumberLong(13475056),
+            "totalKeysExamined" : NumberLong(0),
+            "collectionScans" : NumberLong(736),
+            "indexesUsed" : [
+
+            ],
+            "nReturned" : NumberLong(484),
+            "executionTimeMillisEstimate" : NumberLong(10633)
+        },
+        {
+            "$addFields" : {
+                "upDownRangePost" : {
+                    "$subtract" : [
+                        "$upvotes",
+                        "$downvotes"
+                    ]
+                },
+                "totalKarma" : "$users.total_karma",
+                "userCommentKarma" : "$users.comment_karma"
+            },
+            "nReturned" : NumberLong(484),
+            "executionTimeMillisEstimate" : NumberLong(10636)
+        },
+        {
+            "$group" : {
+                "_id" : "$id",
+                "upDownRangePost" : {
+                    "$addToSet" : "$upDownRangePost"
+                },
+                "totalKarma" : {
+                    "$addToSet" : "$totalKarma"
+                },
+                "userCommentKarma" : {
+                    "$addToSet" : "$userCommentKarma"
+                },
+                "percentilleUserCommentKarma" : {
+                    "$addToSet" : {
+                        "$multiply" : [
+                            {
+                                "$divide" : [
+                                    "$totalKarma",
+                                    {
+                                        "$cond" : [
+                                            {
+                                                "$ne" : [
+                                                    "$userCommentKarma",
+                                                    {
+                                                        "$const" : 0.0
+                                                    }
+                                                ]
+                                            },
+                                            "$userCommentKarma",
+                                            {
+                                                "$const" : null
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "$const" : 100.0
+                            }
+                        ]
+                    }
+                },
+                "percentilleTotalPostKarma" : {
+                    "$addToSet" : {
+                        "$multiply" : [
+                            {
+                                "$divide" : [
+                                    "$totalKarma",
+                                    "$upDownRangePost"
+                                ]
+                            },
+                            {
+                                "$const" : 100.0
+                            }
+                        ]
+                    }
+                },
+                "percentilleCommentPostKarma" : {
+                    "$addToSet" : {
+                        "$multiply" : [
+                            {
+                                "$divide" : [
+                                    "$userCommentKarma",
+                                    "$upDownRangePost"
+                                ]
+                            },
+                            {
+                                "$const" : 100.0
+                            }
+                        ]
+                    }
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "upDownRangePost" : NumberLong(39088),
+                "totalKarma" : NumberLong(40368),
+                "userCommentKarma" : NumberLong(39936),
+                "percentilleUserCommentKarma" : NumberLong(40368),
+                "percentilleTotalPostKarma" : NumberLong(40368),
+                "percentilleCommentPostKarma" : NumberLong(40304)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(339897),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(349),
+            "executionTimeMillisEstimate" : NumberLong(10641)
+        },
+        {
+            "$sort" : {
+                "sortKey" : {
+                    "percentilleCommentPostKarma" : 1.0
+                }
+            },
+            "totalDataSizeSortedBytesEstimate" : NumberLong(342689),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(349),
+            "executionTimeMillisEstimate" : NumberLong(10642)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "post_data",
+        "pipeline" : [
+            {
+                "$addFields" : {
+                    "dateField" : {
+                        "$toDate" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                1000.0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$match" : {
+                    "dateField" : {
+                        "$gte" : ISODate("2019-01-01T00:00:00.000+0000"),
+                        "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                    },
+                    "total_awards" : {
+                        "$gte" : 1.0
+                    }
+                }
+            },
+            {
+                "$lookup" : {
+                    "from" : "user_data",
+                    "localField" : "author",
+                    "foreignField" : "name",
+                    "as" : "users"
+                }
+            },
+            {
+                "$unwind" : "$users"
+            },
+            {
+                "$addFields" : {
+                    "upDownRangePost" : {
+                        "$subtract" : [
+                            "$upvotes",
+                            "$downvotes"
+                        ]
+                    },
+                    "totalKarma" : "$users.total_karma",
+                    "userCommentKarma" : "$users.comment_karma"
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$id",
+                    "upDownRangePost" : {
+                        "$addToSet" : "$upDownRangePost"
+                    },
+                    "totalKarma" : {
+                        "$addToSet" : "$totalKarma"
+                    },
+                    "userCommentKarma" : {
+                        "$addToSet" : "$userCommentKarma"
+                    },
+                    "percentilleUserCommentKarma" : {
+                        "$addToSet" : {
+                            "$multiply" : [
+                                {
+                                    "$divide" : [
+                                        "$totalKarma",
+                                        {
+                                            "$cond" : [
+                                                {
+                                                    "$ne" : [
+                                                        "$userCommentKarma",
+                                                        0.0
+                                                    ]
+                                                },
+                                                "$userCommentKarma",
+                                                null
+                                            ]
+                                        }
+                                    ]
+                                },
+                                100.0
+                            ]
+                        }
+                    },
+                    "percentilleTotalPostKarma" : {
+                        "$addToSet" : {
+                            "$multiply" : [
+                                {
+                                    "$divide" : [
+                                        "$totalKarma",
+                                        "$upDownRangePost"
+                                    ]
+                                },
+                                100.0
+                            ]
+                        }
+                    },
+                    "percentilleCommentPostKarma" : {
+                        "$addToSet" : {
+                            "$multiply" : [
+                                {
+                                    "$divide" : [
+                                        "$userCommentKarma",
+                                        "$upDownRangePost"
+                                    ]
+                                },
+                                100.0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$sort" : {
+                    "percentilleCommentPostKarma" : 1.0
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

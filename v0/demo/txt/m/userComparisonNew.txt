@@ -1,0 +1,811 @@
+db.getCollection("reformated_posts2").aggregate([
+
+    {
+        $match: {
+            "created_date": { $gte: ISODate("2022-01-01"), $lt: ISODate("2023-01-01") }
+        }
+    },
+    {
+        $group:{
+            _id:{
+                field1: {$eq:["$author.name","[deleted]"]},
+                field2: {$ifNull: ["$author.gold",false]}
+            },
+            count: { $sum: 1 },
+            total_awards: { $sum: "$total_awards" }, 
+            total_score: { $sum: "$score" }, 
+        }
+    },
+    {
+        $project:{
+            _id:0,
+            suspended:"$_id.field1",
+            is_premium:"$_id.field2",
+            count:1,
+            total_awards:1,
+            total_score:1
+        }
+    }
+]).explain("executionStats")
+
+
+=============================================================================================
+
+
+{
+    "explainVersion" : "2",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.reformated_posts2",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+                        "$and" : [
+                            {
+                                "created_date" : {
+                                    "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                                }
+                            },
+                            {
+                                "created_date" : {
+                                    "$gte" : ISODate("2022-01-01T00:00:00.000+0000")
+                                }
+                            }
+                        ]
+                    },
+                    "queryHash" : "D1626958",
+                    "planCacheKey" : "D1626958",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "queryPlan" : {
+                            "stage" : "GROUP",
+                            "planNodeId" : 3.0,
+                            "inputStage" : {
+                                "stage" : "PROJECTION_DEFAULT",
+                                "planNodeId" : 2.0,
+                                "transformBy" : {
+                                    "author" : {
+                                        "gold" : true,
+                                        "name" : true
+                                    },
+                                    "score" : true,
+                                    "total_awards" : true,
+                                    "_id" : false
+                                },
+                                "inputStage" : {
+                                    "stage" : "COLLSCAN",
+                                    "planNodeId" : 1.0,
+                                    "filter" : {
+                                        "$and" : [
+                                            {
+                                                "created_date" : {
+                                                    "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                                                }
+                                            },
+                                            {
+                                                "created_date" : {
+                                                    "$gte" : ISODate("2022-01-01T00:00:00.000+0000")
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "direction" : "forward"
+                                }
+                            }
+                        },
+                        "slotBasedPlan" : {
+                            "slots" : "$$RESULT=s29 env: { s2 = Nothing (SEARCH_META), s1 = TimeZoneDatabase(America/Argentina/San_Juan...America/Argentina/Cordoba) (timeZoneDB), s3 = 1686572020154 (NOW) }",
+                            "stages" : "[3] mkobj s29 [_id = s25, count = s26, total_awards = s27, total_score = s28] true false \n[3] project [s25 = newObj (\"field1\", s14, \"field2\", s19), s26 = doubleDoubleSumFinalize (s20), s27 = doubleDoubleSumFinalize (s22), s28 = doubleDoubleSumFinalize (s24)] \n[3] group [s14, s19] [s20 = aggDoubleDoubleSum (1), s22 = aggDoubleDoubleSum (s21), s24 = aggDoubleDoubleSum (s23)] \n[3] project [s23 = getField (s10, \"score\")] \n[3] project [s21 = getField (s10, \"total_awards\")] \n[3] nlj [s10, s11, s13, s14, s15, s17] [s10, s11, s13, s14, s15, s17] \n    left \n        [3] traverse s17 s16 s15 [s10, s11, s13, s14] {} {} \n        from \n            [3] project [s15 = getField (s10, \"author\")] \n            [3] project [s14 = let [l1.0 = s13, l1.1 = \"[deleted]\"] fillEmpty (l1.0 <=> l1.1 == 0, exists (l1.0) && typeMatch (l1.0, -65) == exists (l1.1) && typeMatch (l1.1, -65))] \n            [3] traverse s13 s12 s11 [s10] {} {} \n            from \n                [3] project [s11 = getField (s10, \"author\")] \n                [2] traverse s10 s9 s4 {} {} \n                from \n                    [1] filter {applyClassicMatcher (ClassicMatcher({ $and: [ { created_date: { $lt: new Date(1672531200000) } }, { created_date: { $gte: new Date(1640995200000) } } ] }), s4)} \n                    [1] scan s4 s5 none none none none [] @\"2f9072db-64e8-4918-8e01-8c9d324b016f\" true false \n                in \n                    [2] cfilter {isObject (s4)} \n                    [2] mkbson s9 s4 [score, total_awards] keep [author = s8] true false \n                    [2] traverse s8 s7 s6 {} {} \n                    from \n                        [2] project [s6 = getField (s4, \"author\")] \n                        [2] limit 1 \n                        [2] coscan \n                    in \n                        [2] cfilter {isObject (s6)} \n                        [2] mkbson s7 s6 [gold, name] keep [] true false \n                        [2] limit 1 \n                        [2] coscan \n                    \n                \n            in \n                [3] project [s12 = getField (s11, \"name\")] \n                [3] limit 1 \n                [3] coscan \n            \n        in \n            [3] project [s16 = getField (s15, \"gold\")] \n            [3] limit 1 \n            [3] coscan \n        \n    right \n        [3] limit 1 \n        [3] union [s19] [\n            [s17] [3] filter {! ! exists (s17) || typeMatch (s17, 1088)} \n            [3] limit 1 \n            [3] coscan , \n            [s18] [3] project [s18 = false] \n            [3] limit 1 \n            [3] coscan \n       ] \n    \n"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 3.0,
+                    "executionTimeMillis" : 17.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "mkobj",
+                        "planNodeId" : 3.0,
+                        "nReturned" : 3.0,
+                        "executionTimeMillisEstimate" : 3.0,
+                        "opens" : 1.0,
+                        "closes" : 1.0,
+                        "saveState" : 2.0,
+                        "restoreState" : 2.0,
+                        "isEOF" : 1.0,
+                        "objSlot" : 29.0,
+                        "fields" : [
+
+                        ],
+                        "projectFields" : [
+                            "_id",
+                            "count",
+                            "total_awards",
+                            "total_score"
+                        ],
+                        "projectSlots" : [
+                            NumberLong(25),
+                            NumberLong(26),
+                            NumberLong(27),
+                            NumberLong(28)
+                        ],
+                        "forceNewObject" : true,
+                        "returnOldObject" : false,
+                        "inputStage" : {
+                            "stage" : "project",
+                            "planNodeId" : 3.0,
+                            "nReturned" : 3.0,
+                            "executionTimeMillisEstimate" : 3.0,
+                            "opens" : 1.0,
+                            "closes" : 1.0,
+                            "saveState" : 2.0,
+                            "restoreState" : 2.0,
+                            "isEOF" : 1.0,
+                            "projections" : {
+                                "25" : "newObj (\"field1\", s14, \"field2\", s19) ",
+                                "26" : "doubleDoubleSumFinalize (s20) ",
+                                "27" : "doubleDoubleSumFinalize (s22) ",
+                                "28" : "doubleDoubleSumFinalize (s24) "
+                            },
+                            "inputStage" : {
+                                "stage" : "group",
+                                "planNodeId" : 3.0,
+                                "nReturned" : 3.0,
+                                "executionTimeMillisEstimate" : 3.0,
+                                "opens" : 1.0,
+                                "closes" : 1.0,
+                                "saveState" : 2.0,
+                                "restoreState" : 2.0,
+                                "isEOF" : 1.0,
+                                "groupBySlots" : [
+                                    NumberLong(14),
+                                    NumberLong(19)
+                                ],
+                                "expressions" : {
+                                    "20" : "aggDoubleDoubleSum (1) ",
+                                    "22" : "aggDoubleDoubleSum (s21) ",
+                                    "24" : "aggDoubleDoubleSum (s23) "
+                                },
+                                "usedDisk" : false,
+                                "spilledRecords" : 0.0,
+                                "spilledBytesApprox" : 0.0,
+                                "inputStage" : {
+                                    "stage" : "project",
+                                    "planNodeId" : 3.0,
+                                    "nReturned" : 98.0,
+                                    "executionTimeMillisEstimate" : 3.0,
+                                    "opens" : 1.0,
+                                    "closes" : 1.0,
+                                    "saveState" : 2.0,
+                                    "restoreState" : 2.0,
+                                    "isEOF" : 1.0,
+                                    "projections" : {
+                                        "23" : "getField (s10, \"score\") "
+                                    },
+                                    "inputStage" : {
+                                        "stage" : "project",
+                                        "planNodeId" : 3.0,
+                                        "nReturned" : 98.0,
+                                        "executionTimeMillisEstimate" : 3.0,
+                                        "opens" : 1.0,
+                                        "closes" : 1.0,
+                                        "saveState" : 2.0,
+                                        "restoreState" : 2.0,
+                                        "isEOF" : 1.0,
+                                        "projections" : {
+                                            "21" : "getField (s10, \"total_awards\") "
+                                        },
+                                        "inputStage" : {
+                                            "stage" : "nlj",
+                                            "planNodeId" : 3.0,
+                                            "nReturned" : 98.0,
+                                            "executionTimeMillisEstimate" : 3.0,
+                                            "opens" : 1.0,
+                                            "closes" : 1.0,
+                                            "saveState" : 2.0,
+                                            "restoreState" : 2.0,
+                                            "isEOF" : 1.0,
+                                            "totalDocsExamined" : 989.0,
+                                            "totalKeysExamined" : 0.0,
+                                            "collectionScans" : 1.0,
+                                            "collectionSeeks" : 0.0,
+                                            "indexScans" : 0.0,
+                                            "indexSeeks" : 0.0,
+                                            "indexesUsed" : [
+
+                                            ],
+                                            "innerOpens" : 98.0,
+                                            "innerCloses" : 1.0,
+                                            "outerProjects" : [
+                                                NumberLong(10),
+                                                NumberLong(11),
+                                                NumberLong(13),
+                                                NumberLong(14),
+                                                NumberLong(15),
+                                                NumberLong(17)
+                                            ],
+                                            "outerCorrelated" : [
+                                                NumberLong(10),
+                                                NumberLong(11),
+                                                NumberLong(13),
+                                                NumberLong(14),
+                                                NumberLong(15),
+                                                NumberLong(17)
+                                            ],
+                                            "outerStage" : {
+                                                "stage" : "traverse",
+                                                "planNodeId" : 3.0,
+                                                "nReturned" : 98.0,
+                                                "executionTimeMillisEstimate" : 3.0,
+                                                "opens" : 1.0,
+                                                "closes" : 1.0,
+                                                "saveState" : 2.0,
+                                                "restoreState" : 2.0,
+                                                "isEOF" : 1.0,
+                                                "innerOpens" : 0.0,
+                                                "innerCloses" : 0.0,
+                                                "inputSlot" : 15.0,
+                                                "outputSlot" : 17.0,
+                                                "outputSlotInner" : 16.0,
+                                                "correlatedSlots" : [
+                                                    NumberLong(10),
+                                                    NumberLong(11),
+                                                    NumberLong(13),
+                                                    NumberLong(14)
+                                                ],
+                                                "nestedArraysDepth" : 1.0,
+                                                "outerStage" : {
+                                                    "stage" : "project",
+                                                    "planNodeId" : 3.0,
+                                                    "nReturned" : 98.0,
+                                                    "executionTimeMillisEstimate" : 3.0,
+                                                    "opens" : 1.0,
+                                                    "closes" : 1.0,
+                                                    "saveState" : 2.0,
+                                                    "restoreState" : 2.0,
+                                                    "isEOF" : 1.0,
+                                                    "projections" : {
+                                                        "15" : "getField (s10, \"author\") "
+                                                    },
+                                                    "inputStage" : {
+                                                        "stage" : "project",
+                                                        "planNodeId" : 3.0,
+                                                        "nReturned" : 98.0,
+                                                        "executionTimeMillisEstimate" : 3.0,
+                                                        "opens" : 1.0,
+                                                        "closes" : 1.0,
+                                                        "saveState" : 2.0,
+                                                        "restoreState" : 2.0,
+                                                        "isEOF" : 1.0,
+                                                        "projections" : {
+                                                            "14" : "let [l1.0 = s13, l1.1 = \"[deleted]\"] fillEmpty (l1.0 <=> l1.1 == 0, exists (l1.0) && typeMatch (l1.0, -65) == exists (l1.1) && typeMatch (l1.1, -65)) "
+                                                        },
+                                                        "inputStage" : {
+                                                            "stage" : "traverse",
+                                                            "planNodeId" : 3.0,
+                                                            "nReturned" : 98.0,
+                                                            "executionTimeMillisEstimate" : 2.0,
+                                                            "opens" : 1.0,
+                                                            "closes" : 1.0,
+                                                            "saveState" : 2.0,
+                                                            "restoreState" : 2.0,
+                                                            "isEOF" : 1.0,
+                                                            "innerOpens" : 0.0,
+                                                            "innerCloses" : 0.0,
+                                                            "inputSlot" : 11.0,
+                                                            "outputSlot" : 13.0,
+                                                            "outputSlotInner" : 12.0,
+                                                            "correlatedSlots" : [
+                                                                NumberLong(10)
+                                                            ],
+                                                            "nestedArraysDepth" : 1.0,
+                                                            "outerStage" : {
+                                                                "stage" : "project",
+                                                                "planNodeId" : 3.0,
+                                                                "nReturned" : 98.0,
+                                                                "executionTimeMillisEstimate" : 2.0,
+                                                                "opens" : 1.0,
+                                                                "closes" : 1.0,
+                                                                "saveState" : 2.0,
+                                                                "restoreState" : 2.0,
+                                                                "isEOF" : 1.0,
+                                                                "projections" : {
+                                                                    "11" : "getField (s10, \"author\") "
+                                                                },
+                                                                "inputStage" : {
+                                                                    "stage" : "traverse",
+                                                                    "planNodeId" : 2.0,
+                                                                    "nReturned" : 98.0,
+                                                                    "executionTimeMillisEstimate" : 2.0,
+                                                                    "opens" : 1.0,
+                                                                    "closes" : 1.0,
+                                                                    "saveState" : 2.0,
+                                                                    "restoreState" : 2.0,
+                                                                    "isEOF" : 1.0,
+                                                                    "innerOpens" : 0.0,
+                                                                    "innerCloses" : 0.0,
+                                                                    "inputSlot" : 4.0,
+                                                                    "outputSlot" : 10.0,
+                                                                    "outputSlotInner" : 9.0,
+                                                                    "correlatedSlots" : [
+
+                                                                    ],
+                                                                    "outerStage" : {
+                                                                        "stage" : "filter",
+                                                                        "planNodeId" : 1.0,
+                                                                        "nReturned" : 98.0,
+                                                                        "executionTimeMillisEstimate" : 1.0,
+                                                                        "opens" : 1.0,
+                                                                        "closes" : 1.0,
+                                                                        "saveState" : 2.0,
+                                                                        "restoreState" : 2.0,
+                                                                        "isEOF" : 1.0,
+                                                                        "numTested" : 989.0,
+                                                                        "filter" : "applyClassicMatcher (ClassicMatcher({ $and: [ { created_date: { $lt: new Date(1672531200000) } }, { created_date: { $gte: new Date(1640995200000) } } ] }), s4) ",
+                                                                        "inputStage" : {
+                                                                            "stage" : "scan",
+                                                                            "planNodeId" : 1.0,
+                                                                            "nReturned" : 989.0,
+                                                                            "executionTimeMillisEstimate" : 1.0,
+                                                                            "opens" : 1.0,
+                                                                            "closes" : 1.0,
+                                                                            "saveState" : 2.0,
+                                                                            "restoreState" : 2.0,
+                                                                            "isEOF" : 1.0,
+                                                                            "numReads" : 989.0,
+                                                                            "recordSlot" : 4.0,
+                                                                            "recordIdSlot" : 5.0,
+                                                                            "fields" : [
+
+                                                                            ],
+                                                                            "outputSlots" : [
+
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    "innerStage" : {
+                                                                        "stage" : "cfilter",
+                                                                        "planNodeId" : 2.0,
+                                                                        "nReturned" : 98.0,
+                                                                        "executionTimeMillisEstimate" : 1.0,
+                                                                        "opens" : 98.0,
+                                                                        "closes" : 1.0,
+                                                                        "saveState" : 2.0,
+                                                                        "restoreState" : 2.0,
+                                                                        "isEOF" : 0.0,
+                                                                        "numTested" : 98.0,
+                                                                        "filter" : "isObject (s4) ",
+                                                                        "inputStage" : {
+                                                                            "stage" : "mkbson",
+                                                                            "planNodeId" : 2.0,
+                                                                            "nReturned" : 98.0,
+                                                                            "executionTimeMillisEstimate" : 0.0,
+                                                                            "opens" : 98.0,
+                                                                            "closes" : 1.0,
+                                                                            "saveState" : 2.0,
+                                                                            "restoreState" : 2.0,
+                                                                            "isEOF" : 0.0,
+                                                                            "objSlot" : 9.0,
+                                                                            "rootSlot" : 4.0,
+                                                                            "fieldBehavior" : "keep",
+                                                                            "fields" : [
+                                                                                "score",
+                                                                                "total_awards"
+                                                                            ],
+                                                                            "projectFields" : [
+                                                                                "author"
+                                                                            ],
+                                                                            "projectSlots" : [
+                                                                                NumberLong(8)
+                                                                            ],
+                                                                            "forceNewObject" : true,
+                                                                            "returnOldObject" : false,
+                                                                            "inputStage" : {
+                                                                                "stage" : "traverse",
+                                                                                "planNodeId" : 2.0,
+                                                                                "nReturned" : 98.0,
+                                                                                "executionTimeMillisEstimate" : 0.0,
+                                                                                "opens" : 98.0,
+                                                                                "closes" : 1.0,
+                                                                                "saveState" : 2.0,
+                                                                                "restoreState" : 2.0,
+                                                                                "isEOF" : 0.0,
+                                                                                "innerOpens" : 0.0,
+                                                                                "innerCloses" : 0.0,
+                                                                                "inputSlot" : 6.0,
+                                                                                "outputSlot" : 8.0,
+                                                                                "outputSlotInner" : 7.0,
+                                                                                "correlatedSlots" : [
+
+                                                                                ],
+                                                                                "outerStage" : {
+                                                                                    "stage" : "project",
+                                                                                    "planNodeId" : 2.0,
+                                                                                    "nReturned" : 98.0,
+                                                                                    "executionTimeMillisEstimate" : 0.0,
+                                                                                    "opens" : 98.0,
+                                                                                    "closes" : 1.0,
+                                                                                    "saveState" : 2.0,
+                                                                                    "restoreState" : 2.0,
+                                                                                    "isEOF" : 0.0,
+                                                                                    "projections" : {
+                                                                                        "6" : "getField (s4, \"author\") "
+                                                                                    },
+                                                                                    "inputStage" : {
+                                                                                        "stage" : "limit",
+                                                                                        "planNodeId" : 2.0,
+                                                                                        "nReturned" : 98.0,
+                                                                                        "executionTimeMillisEstimate" : 0.0,
+                                                                                        "opens" : 98.0,
+                                                                                        "closes" : 1.0,
+                                                                                        "saveState" : 2.0,
+                                                                                        "restoreState" : 2.0,
+                                                                                        "isEOF" : 0.0,
+                                                                                        "limit" : 1.0,
+                                                                                        "inputStage" : {
+                                                                                            "stage" : "coscan",
+                                                                                            "planNodeId" : 2.0,
+                                                                                            "nReturned" : 98.0,
+                                                                                            "executionTimeMillisEstimate" : 0.0,
+                                                                                            "opens" : 98.0,
+                                                                                            "closes" : 1.0,
+                                                                                            "saveState" : 2.0,
+                                                                                            "restoreState" : 2.0,
+                                                                                            "isEOF" : 0.0
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                "innerStage" : {
+                                                                                    "stage" : "cfilter",
+                                                                                    "planNodeId" : 2.0,
+                                                                                    "nReturned" : 98.0,
+                                                                                    "executionTimeMillisEstimate" : 0.0,
+                                                                                    "opens" : 98.0,
+                                                                                    "closes" : 1.0,
+                                                                                    "saveState" : 2.0,
+                                                                                    "restoreState" : 2.0,
+                                                                                    "isEOF" : 0.0,
+                                                                                    "numTested" : 98.0,
+                                                                                    "filter" : "isObject (s6) ",
+                                                                                    "inputStage" : {
+                                                                                        "stage" : "mkbson",
+                                                                                        "planNodeId" : 2.0,
+                                                                                        "nReturned" : 98.0,
+                                                                                        "executionTimeMillisEstimate" : 0.0,
+                                                                                        "opens" : 98.0,
+                                                                                        "closes" : 1.0,
+                                                                                        "saveState" : 2.0,
+                                                                                        "restoreState" : 2.0,
+                                                                                        "isEOF" : 0.0,
+                                                                                        "objSlot" : 7.0,
+                                                                                        "rootSlot" : 6.0,
+                                                                                        "fieldBehavior" : "keep",
+                                                                                        "fields" : [
+                                                                                            "gold",
+                                                                                            "name"
+                                                                                        ],
+                                                                                        "projectFields" : [
+
+                                                                                        ],
+                                                                                        "projectSlots" : [
+
+                                                                                        ],
+                                                                                        "forceNewObject" : true,
+                                                                                        "returnOldObject" : false,
+                                                                                        "inputStage" : {
+                                                                                            "stage" : "limit",
+                                                                                            "planNodeId" : 2.0,
+                                                                                            "nReturned" : 98.0,
+                                                                                            "executionTimeMillisEstimate" : 0.0,
+                                                                                            "opens" : 98.0,
+                                                                                            "closes" : 1.0,
+                                                                                            "saveState" : 2.0,
+                                                                                            "restoreState" : 2.0,
+                                                                                            "isEOF" : 0.0,
+                                                                                            "limit" : 1.0,
+                                                                                            "inputStage" : {
+                                                                                                "stage" : "coscan",
+                                                                                                "planNodeId" : 2.0,
+                                                                                                "nReturned" : 98.0,
+                                                                                                "executionTimeMillisEstimate" : 0.0,
+                                                                                                "opens" : 98.0,
+                                                                                                "closes" : 1.0,
+                                                                                                "saveState" : 2.0,
+                                                                                                "restoreState" : 2.0,
+                                                                                                "isEOF" : 0.0
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            "innerStage" : {
+                                                                "stage" : "project",
+                                                                "planNodeId" : 3.0,
+                                                                "nReturned" : 98.0,
+                                                                "executionTimeMillisEstimate" : 0.0,
+                                                                "opens" : 98.0,
+                                                                "closes" : 1.0,
+                                                                "saveState" : 2.0,
+                                                                "restoreState" : 2.0,
+                                                                "isEOF" : 0.0,
+                                                                "projections" : {
+                                                                    "12" : "getField (s11, \"name\") "
+                                                                },
+                                                                "inputStage" : {
+                                                                    "stage" : "limit",
+                                                                    "planNodeId" : 3.0,
+                                                                    "nReturned" : 98.0,
+                                                                    "executionTimeMillisEstimate" : 0.0,
+                                                                    "opens" : 98.0,
+                                                                    "closes" : 1.0,
+                                                                    "saveState" : 2.0,
+                                                                    "restoreState" : 2.0,
+                                                                    "isEOF" : 0.0,
+                                                                    "limit" : 1.0,
+                                                                    "inputStage" : {
+                                                                        "stage" : "coscan",
+                                                                        "planNodeId" : 3.0,
+                                                                        "nReturned" : 98.0,
+                                                                        "executionTimeMillisEstimate" : 0.0,
+                                                                        "opens" : 98.0,
+                                                                        "closes" : 1.0,
+                                                                        "saveState" : 2.0,
+                                                                        "restoreState" : 2.0,
+                                                                        "isEOF" : 0.0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "innerStage" : {
+                                                    "stage" : "project",
+                                                    "planNodeId" : 3.0,
+                                                    "nReturned" : 98.0,
+                                                    "executionTimeMillisEstimate" : 0.0,
+                                                    "opens" : 98.0,
+                                                    "closes" : 1.0,
+                                                    "saveState" : 2.0,
+                                                    "restoreState" : 2.0,
+                                                    "isEOF" : 0.0,
+                                                    "projections" : {
+                                                        "16" : "getField (s15, \"gold\") "
+                                                    },
+                                                    "inputStage" : {
+                                                        "stage" : "limit",
+                                                        "planNodeId" : 3.0,
+                                                        "nReturned" : 98.0,
+                                                        "executionTimeMillisEstimate" : 0.0,
+                                                        "opens" : 98.0,
+                                                        "closes" : 1.0,
+                                                        "saveState" : 2.0,
+                                                        "restoreState" : 2.0,
+                                                        "isEOF" : 0.0,
+                                                        "limit" : 1.0,
+                                                        "inputStage" : {
+                                                            "stage" : "coscan",
+                                                            "planNodeId" : 3.0,
+                                                            "nReturned" : 98.0,
+                                                            "executionTimeMillisEstimate" : 0.0,
+                                                            "opens" : 98.0,
+                                                            "closes" : 1.0,
+                                                            "saveState" : 2.0,
+                                                            "restoreState" : 2.0,
+                                                            "isEOF" : 0.0
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "innerStage" : {
+                                                "stage" : "limit",
+                                                "planNodeId" : 3.0,
+                                                "nReturned" : 98.0,
+                                                "executionTimeMillisEstimate" : 0.0,
+                                                "opens" : 98.0,
+                                                "closes" : 1.0,
+                                                "saveState" : 2.0,
+                                                "restoreState" : 2.0,
+                                                "isEOF" : 1.0,
+                                                "limit" : 1.0,
+                                                "inputStage" : {
+                                                    "stage" : "union",
+                                                    "planNodeId" : 3.0,
+                                                    "nReturned" : 98.0,
+                                                    "executionTimeMillisEstimate" : 0.0,
+                                                    "opens" : 98.0,
+                                                    "closes" : 1.0,
+                                                    "saveState" : 2.0,
+                                                    "restoreState" : 2.0,
+                                                    "isEOF" : 0.0,
+                                                    "inputSlots" : [
+                                                        NumberLong(17),
+                                                        NumberLong(18)
+                                                    ],
+                                                    "outputSlots" : [
+                                                        NumberLong(19)
+                                                    ],
+                                                    "inputStages" : [
+                                                        {
+                                                            "stage" : "filter",
+                                                            "planNodeId" : 3.0,
+                                                            "nReturned" : 90.0,
+                                                            "executionTimeMillisEstimate" : 0.0,
+                                                            "opens" : 98.0,
+                                                            "closes" : 98.0,
+                                                            "saveState" : 2.0,
+                                                            "restoreState" : 2.0,
+                                                            "isEOF" : 1.0,
+                                                            "numTested" : 98.0,
+                                                            "filter" : "! ! exists (s17) || typeMatch (s17, 1088) ",
+                                                            "inputStage" : {
+                                                                "stage" : "limit",
+                                                                "planNodeId" : 3.0,
+                                                                "nReturned" : 98.0,
+                                                                "executionTimeMillisEstimate" : 0.0,
+                                                                "opens" : 98.0,
+                                                                "closes" : 98.0,
+                                                                "saveState" : 2.0,
+                                                                "restoreState" : 2.0,
+                                                                "isEOF" : 1.0,
+                                                                "limit" : 1.0,
+                                                                "inputStage" : {
+                                                                    "stage" : "coscan",
+                                                                    "planNodeId" : 3.0,
+                                                                    "nReturned" : 98.0,
+                                                                    "executionTimeMillisEstimate" : 0.0,
+                                                                    "opens" : 98.0,
+                                                                    "closes" : 98.0,
+                                                                    "saveState" : 2.0,
+                                                                    "restoreState" : 2.0,
+                                                                    "isEOF" : 0.0
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "stage" : "project",
+                                                            "planNodeId" : 3.0,
+                                                            "nReturned" : 8.0,
+                                                            "executionTimeMillisEstimate" : 0.0,
+                                                            "opens" : 8.0,
+                                                            "closes" : 8.0,
+                                                            "saveState" : 2.0,
+                                                            "restoreState" : 2.0,
+                                                            "isEOF" : 0.0,
+                                                            "projections" : {
+                                                                "18" : "false "
+                                                            },
+                                                            "inputStage" : {
+                                                                "stage" : "limit",
+                                                                "planNodeId" : 3.0,
+                                                                "nReturned" : 8.0,
+                                                                "executionTimeMillisEstimate" : 0.0,
+                                                                "opens" : 8.0,
+                                                                "closes" : 8.0,
+                                                                "saveState" : 2.0,
+                                                                "restoreState" : 2.0,
+                                                                "isEOF" : 0.0,
+                                                                "limit" : 1.0,
+                                                                "inputStage" : {
+                                                                    "stage" : "coscan",
+                                                                    "planNodeId" : 3.0,
+                                                                    "nReturned" : 8.0,
+                                                                    "executionTimeMillisEstimate" : 0.0,
+                                                                    "opens" : 8.0,
+                                                                    "closes" : 8.0,
+                                                                    "saveState" : 2.0,
+                                                                    "restoreState" : 2.0,
+                                                                    "isEOF" : 0.0
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(3),
+            "executionTimeMillisEstimate" : NumberLong(3)
+        },
+        {
+            "$project" : {
+                "count" : true,
+                "total_awards" : true,
+                "total_score" : true,
+                "suspended" : "$_id.field1",
+                "is_premium" : "$_id.field2",
+                "_id" : false
+            },
+            "nReturned" : NumberLong(3),
+            "executionTimeMillisEstimate" : NumberLong(3)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "reformated_posts2",
+        "pipeline" : [
+            {
+                "$match" : {
+                    "created_date" : {
+                        "$gte" : ISODate("2022-01-01T00:00:00.000+0000"),
+                        "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                    }
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : {
+                        "field1" : {
+                            "$eq" : [
+                                "$author.name",
+                                "[deleted]"
+                            ]
+                        },
+                        "field2" : {
+                            "$ifNull" : [
+                                "$author.gold",
+                                false
+                            ]
+                        }
+                    },
+                    "count" : {
+                        "$sum" : 1.0
+                    },
+                    "total_awards" : {
+                        "$sum" : "$total_awards"
+                    },
+                    "total_score" : {
+                        "$sum" : "$score"
+                    }
+                }
+            },
+            {
+                "$project" : {
+                    "_id" : 0.0,
+                    "suspended" : "$_id.field1",
+                    "is_premium" : "$_id.field2",
+                    "count" : 1.0,
+                    "total_awards" : 1.0,
+                    "total_score" : 1.0
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

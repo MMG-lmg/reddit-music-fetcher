@@ -1,0 +1,531 @@
+db.getCollection("comment_data").aggregate([
+{
+        $lookup:
+         {
+           from:"user_data",
+           localField: "author",
+           foreignField: "name",
+           as: "user"
+           
+         }
+    },
+    {
+        $unwind: "$user"
+    },
+    {
+        $match: {
+                "user.verified" : {$in:[true]}  //samo verifikovani nalozi
+        }
+    },
+    {
+        $addFields: {
+                dateFieldComment: { $toDate: { $multiply: [ "$created_utc", 1000 ] } }, //kad je nastao komentar
+                dateFieldUser: { $toDate: { $multiply: [ "$user.created_utc", 1000 ] } }, //kad je nastao user,
+                dateRangeForAuthorComment: {
+                $subtract :[
+                {$toDate: { $multiply: [ "$user.created_utc", 1000 ] } }, 
+                { $toDate: { $multiply: [ "$created_utc", 1000 ] }} 
+                ]},
+                totalLinkedKarmaDifference: { 
+                    $abs: {
+                        $subtract: [
+                    "$user.total_karma", "$user.linked_karma"
+                    ]
+                    }
+                },
+                awarderAwardedKarmaDifference: { 
+                    $abs: {
+                        $subtract: [
+                    "$user.awarder_karma", "$user.awarded_karma"
+                    ]
+                    }
+                },
+                upDownCommentDifference: {
+                    $abs: {
+                        $subtract: [
+                    "$upvotes", "$downvotes"
+                    ]
+                    }
+                },
+                /*userName: {
+                    "$user.name"
+                }*/
+                    
+        } 
+    },
+    {
+        $group:{
+             _id: "$user.id",
+             dateUserCommentDifference: {$min: "$dateRangeForAuthorComment"}, //prvi komentar
+             totalLinkedKarmaDifference: {$addToSet: "$totalLinkedKarmaDifference"},
+             awarderAwardedKarmaDifference: {$addToSet: "$awarderAwardedKarmaDifference"},
+             upDownCommentDifference:  {$addToSet: "$upDownCommentDifference"},
+             userName:{$addToSet: "$user.name"},
+             commentText: { $first: { $cond: [{ $eq: ["$dateRangeForAuthorComment", { $min: "$dateRangeForAuthorComment" }] }, "$comments.body", null] } },
+        }
+    },
+    { $sort: {dateuserCommentDifference: -1, updownCommentDifference: 1} }
+    
+    
+]).explain("executionStats")
+
+
+
+====================================================
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.comment_data",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "8CFBF2B9",
+                    "planCacheKey" : "8CFBF2B9",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "awarderAwardedKarmaDifference" : 1.0,
+                            "comments.body" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateRangeForAuthorComment" : 1.0,
+                            "downvotes" : 1.0,
+                            "totalLinkedKarmaDifference" : 1.0,
+                            "upDownCommentDifference" : 1.0,
+                            "upvotes" : 1.0,
+                            "user.awarded_karma" : 1.0,
+                            "user.awarder_karma" : 1.0,
+                            "user.created_utc" : 1.0,
+                            "user.id" : 1.0,
+                            "user.linked_karma" : 1.0,
+                            "user.name" : 1.0,
+                            "user.total_karma" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 46505.0,
+                    "executionTimeMillis" : 1337731.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 46505.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "nReturned" : 46505.0,
+                        "executionTimeMillisEstimate" : 32.0,
+                        "works" : 46507.0,
+                        "advanced" : 46505.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 51.0,
+                        "restoreState" : 51.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "awarderAwardedKarmaDifference" : 1.0,
+                            "comments.body" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateRangeForAuthorComment" : 1.0,
+                            "downvotes" : 1.0,
+                            "totalLinkedKarmaDifference" : 1.0,
+                            "upDownCommentDifference" : 1.0,
+                            "upvotes" : 1.0,
+                            "user.awarded_karma" : 1.0,
+                            "user.awarder_karma" : 1.0,
+                            "user.created_utc" : 1.0,
+                            "user.id" : 1.0,
+                            "user.linked_karma" : 1.0,
+                            "user.name" : 1.0,
+                            "user.total_karma" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 46505.0,
+                            "executionTimeMillisEstimate" : 9.0,
+                            "works" : 46507.0,
+                            "advanced" : 46505.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 51.0,
+                            "restoreState" : 51.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 46505.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(75)
+        },
+        {
+            "$lookup" : {
+                "from" : "user_data",
+                "as" : "user",
+                "localField" : "author",
+                "foreignField" : "name",
+                "let" : {
+
+                },
+                "pipeline" : [
+                    {
+                        "$match" : {
+                            "verified" : {
+                                "$in" : [
+                                    true
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "unwinding" : {
+                    "preserveNullAndEmptyArrays" : false
+                }
+            },
+            "totalDocsExamined" : NumberLong(1702873585),
+            "totalKeysExamined" : NumberLong(0),
+            "collectionScans" : NumberLong(93010),
+            "indexesUsed" : [
+
+            ],
+            "nReturned" : NumberLong(38076),
+            "executionTimeMillisEstimate" : NumberLong(1339521)
+        },
+        {
+            "$addFields" : {
+                "dateFieldComment" : {
+                    "$convert" : {
+                        "input" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                {
+                                    "$const" : 1000.0
+                                }
+                            ]
+                        },
+                        "to" : {
+                            "$const" : "date"
+                        }
+                    }
+                },
+                "dateFieldUser" : {
+                    "$convert" : {
+                        "input" : {
+                            "$multiply" : [
+                                "$user.created_utc",
+                                {
+                                    "$const" : 1000.0
+                                }
+                            ]
+                        },
+                        "to" : {
+                            "$const" : "date"
+                        }
+                    }
+                },
+                "dateRangeForAuthorComment" : {
+                    "$subtract" : [
+                        {
+                            "$convert" : {
+                                "input" : {
+                                    "$multiply" : [
+                                        "$user.created_utc",
+                                        {
+                                            "$const" : 1000.0
+                                        }
+                                    ]
+                                },
+                                "to" : {
+                                    "$const" : "date"
+                                }
+                            }
+                        },
+                        {
+                            "$convert" : {
+                                "input" : {
+                                    "$multiply" : [
+                                        "$created_utc",
+                                        {
+                                            "$const" : 1000.0
+                                        }
+                                    ]
+                                },
+                                "to" : {
+                                    "$const" : "date"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "totalLinkedKarmaDifference" : {
+                    "$abs" : [
+                        {
+                            "$subtract" : [
+                                "$user.total_karma",
+                                "$user.linked_karma"
+                            ]
+                        }
+                    ]
+                },
+                "awarderAwardedKarmaDifference" : {
+                    "$abs" : [
+                        {
+                            "$subtract" : [
+                                "$user.awarder_karma",
+                                "$user.awarded_karma"
+                            ]
+                        }
+                    ]
+                },
+                "upDownCommentDifference" : {
+                    "$abs" : [
+                        {
+                            "$subtract" : [
+                                "$upvotes",
+                                "$downvotes"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "nReturned" : NumberLong(38076),
+            "executionTimeMillisEstimate" : NumberLong(1339734)
+        },
+        {
+            "$group" : {
+                "_id" : "$user.id",
+                "dateUserCommentDifference" : {
+                    "$min" : "$dateRangeForAuthorComment"
+                },
+                "totalLinkedKarmaDifference" : {
+                    "$addToSet" : "$totalLinkedKarmaDifference"
+                },
+                "awarderAwardedKarmaDifference" : {
+                    "$addToSet" : "$awarderAwardedKarmaDifference"
+                },
+                "upDownCommentDifference" : {
+                    "$addToSet" : "$upDownCommentDifference"
+                },
+                "userName" : {
+                    "$addToSet" : "$user.name"
+                },
+                "commentText" : {
+                    "$first" : {
+                        "$cond" : [
+                            {
+                                "$eq" : [
+                                    "$dateRangeForAuthorComment",
+                                    {
+                                        "$min" : [
+                                            "$dateRangeForAuthorComment"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "$comments.body",
+                            {
+                                "$const" : null
+                            }
+                        ]
+                    }
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "dateUserCommentDifference" : NumberLong(1876504),
+                "totalLinkedKarmaDifference" : NumberLong(3753008),
+                "awarderAwardedKarmaDifference" : NumberLong(3753008),
+                "upDownCommentDifference" : NumberLong(3816704),
+                "userName" : NumberLong(4203500),
+                "commentText" : NumberLong(1876504)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(28829293),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(33509),
+            "executionTimeMillisEstimate" : NumberLong(1340012)
+        },
+        {
+            "$sort" : {
+                "sortKey" : {
+                    "dateuserCommentDifference" : -1.0,
+                    "updownCommentDifference" : 1.0
+                }
+            },
+            "totalDataSizeSortedBytesEstimate" : NumberLong(31510013),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(33509),
+            "executionTimeMillisEstimate" : NumberLong(1340045)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "comment_data",
+        "pipeline" : [
+            {
+                "$lookup" : {
+                    "from" : "user_data",
+                    "localField" : "author",
+                    "foreignField" : "name",
+                    "as" : "user"
+                }
+            },
+            {
+                "$unwind" : "$user"
+            },
+            {
+                "$match" : {
+                    "user.verified" : {
+                        "$in" : [
+                            true
+                        ]
+                    }
+                }
+            },
+            {
+                "$addFields" : {
+                    "dateFieldComment" : {
+                        "$toDate" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                1000.0
+                            ]
+                        }
+                    },
+                    "dateFieldUser" : {
+                        "$toDate" : {
+                            "$multiply" : [
+                                "$user.created_utc",
+                                1000.0
+                            ]
+                        }
+                    },
+                    "dateRangeForAuthorComment" : {
+                        "$subtract" : [
+                            {
+                                "$toDate" : {
+                                    "$multiply" : [
+                                        "$user.created_utc",
+                                        1000.0
+                                    ]
+                                }
+                            },
+                            {
+                                "$toDate" : {
+                                    "$multiply" : [
+                                        "$created_utc",
+                                        1000.0
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "totalLinkedKarmaDifference" : {
+                        "$abs" : {
+                            "$subtract" : [
+                                "$user.total_karma",
+                                "$user.linked_karma"
+                            ]
+                        }
+                    },
+                    "awarderAwardedKarmaDifference" : {
+                        "$abs" : {
+                            "$subtract" : [
+                                "$user.awarder_karma",
+                                "$user.awarded_karma"
+                            ]
+                        }
+                    },
+                    "upDownCommentDifference" : {
+                        "$abs" : {
+                            "$subtract" : [
+                                "$upvotes",
+                                "$downvotes"
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$user.id",
+                    "dateUserCommentDifference" : {
+                        "$min" : "$dateRangeForAuthorComment"
+                    },
+                    "totalLinkedKarmaDifference" : {
+                        "$addToSet" : "$totalLinkedKarmaDifference"
+                    },
+                    "awarderAwardedKarmaDifference" : {
+                        "$addToSet" : "$awarderAwardedKarmaDifference"
+                    },
+                    "upDownCommentDifference" : {
+                        "$addToSet" : "$upDownCommentDifference"
+                    },
+                    "userName" : {
+                        "$addToSet" : "$user.name"
+                    },
+                    "commentText" : {
+                        "$first" : {
+                            "$cond" : [
+                                {
+                                    "$eq" : [
+                                        "$dateRangeForAuthorComment",
+                                        {
+                                            "$min" : "$dateRangeForAuthorComment"
+                                        }
+                                    ]
+                                },
+                                "$comments.body",
+                                null
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$sort" : {
+                    "dateuserCommentDifference" : -1.0,
+                    "updownCommentDifference" : 1.0
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

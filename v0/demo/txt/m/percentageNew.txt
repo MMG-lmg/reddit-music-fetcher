@@ -1,0 +1,311 @@
+db.getCollection("reformated_posts2").aggregate([
+    {
+        $project:{
+            "comments.score":1,
+            "comments.author":1,
+            "comments.flair":"$flair"
+        }
+    },
+    {$unwind:"$comments"},
+    { $sort: { "comments.flair":1, "comments.score": -1} },
+    { $group:{
+         _id: "$comments.flair", // Group key
+         comments:{
+             $accumulator: {
+              init: function() {
+                return [];
+              },
+              accumulateArgs: ["$comments"],
+              accumulate: function(state, currentField) {
+                if (state.length < 10) {
+                  state.push(currentField);
+                }
+                return state;
+              },
+              merge: function(state1, state2) {
+                return state1.concat(state2).sort((a, b) => b.score - a.score ).slice(0, 10);
+              },
+              lang: "js"
+            }
+         }
+    }},
+    {$unwind:"$comments"},
+    {
+        $addFields: {"comments.scorePerc":{ $cond: [ {$eq:["$comments.author.total_karma", 0]},null, {$multiply: [{$divide:[ "$comments.score", "$comments.author.total_karma"]}, 100]}]}} 
+    }
+]).explain("executionStats")
+
+
+==========================================================================
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.reformated_posts2",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "B6A32E15",
+                    "planCacheKey" : "B6A32E15",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "transformBy" : {
+                            "_id" : true,
+                            "comments" : {
+                                "author" : true,
+                                "score" : true,
+                                "flair" : "$flair"
+                            }
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 989.0,
+                    "executionTimeMillis" : 4449.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "nReturned" : 989.0,
+                        "executionTimeMillisEstimate" : 566.0,
+                        "works" : 991.0,
+                        "advanced" : 989.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 111.0,
+                        "restoreState" : 111.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "_id" : true,
+                            "comments" : {
+                                "author" : true,
+                                "score" : true,
+                                "flair" : "$flair"
+                            }
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 989.0,
+                            "executionTimeMillisEstimate" : 4.0,
+                            "works" : 991.0,
+                            "advanced" : 989.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 111.0,
+                            "restoreState" : 111.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 989.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(586)
+        },
+        {
+            "$unwind" : {
+                "path" : "$comments"
+            },
+            "nReturned" : NumberLong(299781),
+            "executionTimeMillisEstimate" : NumberLong(668)
+        },
+        {
+            "$sort" : {
+                "sortKey" : {
+                    "comments.flair" : 1.0,
+                    "comments.score" : -1.0
+                }
+            },
+            "totalDataSizeSortedBytesEstimate" : NumberLong(266468025),
+            "usedDisk" : true,
+            "spills" : NumberLong(3),
+            "nReturned" : NumberLong(299781),
+            "executionTimeMillisEstimate" : NumberLong(3392)
+        },
+        {
+            "$group" : {
+                "_id" : "$comments.flair",
+                "comments" : {
+                    "$accumulator" : {
+                        "init" : "function () {\n          {return [];\n          }}",
+                        "initArgs" : {
+                            "$const" : [
+
+                            ]
+                        },
+                        "accumulate" : "function (state, currentField) {\n          {if (state.length < 10) {\n            state.push(currentField);\n          }\n          return state;\n          }}",
+                        "accumulateArgs" : [
+                            "$comments"
+                        ],
+                        "merge" : "function (state1, state2) {\n          {return state1.concat(state2).sort((a, b)=>b.score - a.score).slice(0, 10);\n          }}",
+                        "lang" : "js"
+                    }
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "comments" : NumberLong(104858390)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(152560),
+            "usedDisk" : true,
+            "spills" : NumberLong(4),
+            "nReturned" : NumberLong(38),
+            "executionTimeMillisEstimate" : NumberLong(4448)
+        },
+        {
+            "$unwind" : {
+                "path" : "$comments"
+            },
+            "nReturned" : NumberLong(380),
+            "executionTimeMillisEstimate" : NumberLong(4448)
+        },
+        {
+            "$addFields" : {
+                "comments" : {
+                    "scorePerc" : {
+                        "$cond" : [
+                            {
+                                "$eq" : [
+                                    "$comments.author.total_karma",
+                                    {
+                                        "$const" : 0.0
+                                    }
+                                ]
+                            },
+                            {
+                                "$const" : null
+                            },
+                            {
+                                "$multiply" : [
+                                    {
+                                        "$divide" : [
+                                            "$comments.score",
+                                            "$comments.author.total_karma"
+                                        ]
+                                    },
+                                    {
+                                        "$const" : 100.0
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            "nReturned" : NumberLong(380),
+            "executionTimeMillisEstimate" : NumberLong(4448)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "reformated_posts2",
+        "pipeline" : [
+            {
+                "$project" : {
+                    "comments.score" : 1.0,
+                    "comments.author" : 1.0,
+                    "comments.flair" : "$flair"
+                }
+            },
+            {
+                "$unwind" : "$comments"
+            },
+            {
+                "$sort" : {
+                    "comments.flair" : 1.0,
+                    "comments.score" : -1.0
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$comments.flair",
+                    "comments" : {
+                        "$accumulator" : {
+                            "init" : function () {
+                        {return [];
+                        }},
+                            "accumulateArgs" : [
+                                "$comments"
+                            ],
+                            "accumulate" : function (state, currentField) {
+                        {if (state.length < 10) {
+                          state.push(currentField);
+                        }
+                        return state;
+                        }},
+                            "merge" : function (state1, state2) {
+                        {return state1.concat(state2).sort((a, b)=>b.score - a.score).slice(0, 10);
+                        }},
+                            "lang" : "js"
+                        }
+                    }
+                }
+            },
+            {
+                "$unwind" : "$comments"
+            },
+            {
+                "$addFields" : {
+                    "comments.scorePerc" : {
+                        "$cond" : [
+                            {
+                                "$eq" : [
+                                    "$comments.author.total_karma",
+                                    0.0
+                                ]
+                            },
+                            null,
+                            {
+                                "$multiply" : [
+                                    {
+                                        "$divide" : [
+                                            "$comments.score",
+                                            "$comments.author.total_karma"
+                                        ]
+                                    },
+                                    100.0
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

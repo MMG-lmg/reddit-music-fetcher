@@ -1,0 +1,260 @@
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.reformated_posts2",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "7C17CDBC",
+                    "planCacheKey" : "7C17CDBC",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "transformBy" : {
+                            "activityDifference" : 1.0,
+                            "comments" : 1.0,
+                            "totalComments" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 989.0,
+                    "executionTimeMillis" : 681.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "nReturned" : 989.0,
+                        "executionTimeMillisEstimate" : 0.0,
+                        "works" : 991.0,
+                        "advanced" : 989.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 91.0,
+                        "restoreState" : 91.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "activityDifference" : 1.0,
+                            "comments" : 1.0,
+                            "totalComments" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 989.0,
+                            "executionTimeMillisEstimate" : 0.0,
+                            "works" : 991.0,
+                            "advanced" : 989.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 91.0,
+                            "restoreState" : 91.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 989.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(239)
+        },
+        {
+            "$unwind" : {
+                "path" : "$comments"
+            },
+            "nReturned" : NumberLong(299781),
+            "executionTimeMillisEstimate" : NumberLong(357)
+        },
+        {
+            "$match" : {
+                "$and" : [
+                    {
+                        "comments.created_date" : {
+                            "$gte" : ISODate("2020-01-01T00:00:00.000+0000")
+                        }
+                    },
+                    {
+                        "comments.created_date" : {
+                            "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                        }
+                    },
+                    {
+                        "comments.score" : {
+                            "$gte" : 300.0
+                        }
+                    },
+                    {
+                        "comments.author.is_suspended" : {
+                            "$eq" : false
+                        }
+                    }
+                ]
+            },
+            "nReturned" : NumberLong(13998),
+            "executionTimeMillisEstimate" : NumberLong(618)
+        },
+        {
+            "$addFields" : {
+                "totalComments" : {
+                    "$sum" : [
+                        "$comments.upvotes",
+                        "$comments.downvotes"
+                    ]
+                },
+                "activityDifference" : {
+                    "$abs" : [
+                        {
+                            "$subtract" : [
+                                {
+                                    "$sum" : [
+                                        "$comments.upvotes",
+                                        "$comments.downvotes"
+                                    ]
+                                },
+                                "$comments.author.total_karma"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "nReturned" : NumberLong(13998),
+            "executionTimeMillisEstimate" : NumberLong(646)
+        },
+        {
+            "$group" : {
+                "_id" : "$comments.url",
+                "userName" : {
+                    "$addToSet" : "$comments.author.name"
+                },
+                "commentText" : {
+                    "$addToSet" : "$comments.body"
+                },
+                "totalCommentsActivity" : {
+                    "$addToSet" : "$totalComments"
+                },
+                "totalUserActivity" : {
+                    "$addToSet" : "$comments.author.total_karma"
+                },
+                "activityDifference" : {
+                    "$addToSet" : "$activityDifference"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "userName" : NumberLong(268523),
+                "commentText" : NumberLong(711022),
+                "totalCommentsActivity" : NumberLong(377424),
+                "totalUserActivity" : NumberLong(238336),
+                "activityDifference" : NumberLong(377408)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(2962637),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(2128),
+            "executionTimeMillisEstimate" : NumberLong(671)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "reformated_posts2",
+        "pipeline" : [
+            {
+                "$unwind" : "$comments"
+            },
+            {
+                "$match" : {
+                    "comments.created_date" : {
+                        "$gte" : ISODate("2020-01-01T00:00:00.000+0000"),
+                        "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                    },
+                    "comments.score" : {
+                        "$gte" : 300.0
+                    },
+                    "comments.author.is_suspended" : {
+                        "$in" : [
+                            false
+                        ]
+                    }
+                }
+            },
+            {
+                "$addFields" : {
+                    "totalComments" : {
+                        "$sum" : [
+                            "$comments.upvotes",
+                            "$comments.downvotes"
+                        ]
+                    },
+                    "activityDifference" : {
+                        "$abs" : {
+                            "$subtract" : [
+                                {
+                                    "$sum" : [
+                                        "$comments.upvotes",
+                                        "$comments.downvotes"
+                                    ]
+                                },
+                                "$comments.author.total_karma"
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$comments.url",
+                    "userName" : {
+                        "$addToSet" : "$comments.author.name"
+                    },
+                    "commentText" : {
+                        "$addToSet" : "$comments.body"
+                    },
+                    "totalCommentsActivity" : {
+                        "$addToSet" : "$totalComments"
+                    },
+                    "totalUserActivity" : {
+                        "$addToSet" : "$comments.author.total_karma"
+                    },
+                    "activityDifference" : {
+                        "$addToSet" : "$activityDifference"
+                    }
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

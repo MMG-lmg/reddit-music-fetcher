@@ -1,0 +1,450 @@
+db.getCollection("post_data").aggregate([
+    {
+        $lookup:
+         {
+           from:"user_data",
+           localField: "author",
+           foreignField: "name",
+           as: "user"
+           
+         }
+    },
+    {
+       $addFields: {
+                dateField: { $toDate: { $multiply: [ "$created_utc", 1000 ] } }
+        } 
+    },
+    {
+        $match: {
+            dateField: { $gte: ISODate("2022-01-01"), $lt: ISODate("2023-01-01") }
+        }
+    },
+    {
+        $group:{
+            _id:{
+                field1:{ $size: "$user"},
+                field2: "$user.gold"
+            },
+            count: { $sum: 1 },
+            total_awards: { $sum: "$total_awards" }, 
+            total_score: { $sum: "$score" }, 
+        }
+    }, 
+    {
+    $project: {
+      _id: 0,
+      field1:{$cond: {
+          if: { $eq: ["$_id.field1", 0] },
+          then: "Removed",
+          else: "Active"
+        }},
+      gold:{$cond: {
+          if: { $eq: [{$size: "$_id.field2"}, 0] },
+          then: false,
+          else: { $arrayElemAt: [ "$_id.field2", 0 ] }
+        }},
+      count: 1,
+      total_awards:1,
+      total_score:1
+    }
+  },
+  {
+     $group:{
+            _id:{
+                field1:"$field1",
+                field2: "$gold"
+            }, 
+            count: { $sum: "$count" },
+            total_awards: { $sum: "$total_awards" }, 
+            total_score: { $sum: "$total_score" },
+     }
+  }   
+]).explain("executionStats")
+
+
+=============================================================================================
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.post_data",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "5DB20FD0",
+                    "planCacheKey" : "5DB20FD0",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "score" : 1.0,
+                            "total_awards" : 1.0,
+                            "user" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 989.0,
+                    "executionTimeMillis" : 28349.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "nReturned" : 989.0,
+                        "executionTimeMillisEstimate" : 1.0,
+                        "works" : 991.0,
+                        "advanced" : 989.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 1.0,
+                        "restoreState" : 1.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "score" : 1.0,
+                            "total_awards" : 1.0,
+                            "user" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 989.0,
+                            "executionTimeMillisEstimate" : 1.0,
+                            "works" : 991.0,
+                            "advanced" : 989.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 1.0,
+                            "restoreState" : 1.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 989.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(1)
+        },
+        {
+            "$lookup" : {
+                "from" : "user_data",
+                "as" : "user",
+                "localField" : "author",
+                "foreignField" : "name"
+            },
+            "totalDocsExamined" : NumberLong(36214213),
+            "totalKeysExamined" : NumberLong(0),
+            "collectionScans" : NumberLong(1978),
+            "indexesUsed" : [
+
+            ],
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(28329)
+        },
+        {
+            "$addFields" : {
+                "dateField" : {
+                    "$convert" : {
+                        "input" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                {
+                                    "$const" : 1000.0
+                                }
+                            ]
+                        },
+                        "to" : {
+                            "$const" : "date"
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(28343)
+        },
+        {
+            "$match" : {
+                "$and" : [
+                    {
+                        "dateField" : {
+                            "$gte" : ISODate("2022-01-01T00:00:00.000+0000")
+                        }
+                    },
+                    {
+                        "dateField" : {
+                            "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                        }
+                    }
+                ]
+            },
+            "nReturned" : NumberLong(98),
+            "executionTimeMillisEstimate" : NumberLong(28348)
+        },
+        {
+            "$group" : {
+                "_id" : {
+                    "field1" : {
+                        "$size" : [
+                            "$user"
+                        ]
+                    },
+                    "field2" : "$user.gold"
+                },
+                "count" : {
+                    "$sum" : {
+                        "$const" : 1.0
+                    }
+                },
+                "total_awards" : {
+                    "$sum" : "$total_awards"
+                },
+                "total_score" : {
+                    "$sum" : "$score"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "count" : NumberLong(640),
+                "total_awards" : NumberLong(640),
+                "total_score" : NumberLong(640)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(4752),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(8),
+            "executionTimeMillisEstimate" : NumberLong(28348)
+        },
+        {
+            "$project" : {
+                "count" : true,
+                "total_awards" : true,
+                "total_score" : true,
+                "field1" : {
+                    "$cond" : [
+                        {
+                            "$eq" : [
+                                "$_id.field1",
+                                {
+                                    "$const" : 0.0
+                                }
+                            ]
+                        },
+                        {
+                            "$const" : "Removed"
+                        },
+                        {
+                            "$const" : "Active"
+                        }
+                    ]
+                },
+                "gold" : {
+                    "$cond" : [
+                        {
+                            "$eq" : [
+                                {
+                                    "$size" : [
+                                        "$_id.field2"
+                                    ]
+                                },
+                                {
+                                    "$const" : 0.0
+                                }
+                            ]
+                        },
+                        {
+                            "$const" : false
+                        },
+                        {
+                            "$arrayElemAt" : [
+                                "$_id.field2",
+                                {
+                                    "$const" : 0.0
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "_id" : false
+            },
+            "nReturned" : NumberLong(8),
+            "executionTimeMillisEstimate" : NumberLong(28348)
+        },
+        {
+            "$group" : {
+                "_id" : {
+                    "field1" : "$field1",
+                    "field2" : "$gold"
+                },
+                "count" : {
+                    "$sum" : "$count"
+                },
+                "total_awards" : {
+                    "$sum" : "$total_awards"
+                },
+                "total_score" : {
+                    "$sum" : "$total_score"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "count" : NumberLong(240),
+                "total_awards" : NumberLong(240),
+                "total_score" : NumberLong(240)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(1614),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(3),
+            "executionTimeMillisEstimate" : NumberLong(28348)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "post_data",
+        "pipeline" : [
+            {
+                "$lookup" : {
+                    "from" : "user_data",
+                    "localField" : "author",
+                    "foreignField" : "name",
+                    "as" : "user"
+                }
+            },
+            {
+                "$addFields" : {
+                    "dateField" : {
+                        "$toDate" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                1000.0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$match" : {
+                    "dateField" : {
+                        "$gte" : ISODate("2022-01-01T00:00:00.000+0000"),
+                        "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                    }
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : {
+                        "field1" : {
+                            "$size" : "$user"
+                        },
+                        "field2" : "$user.gold"
+                    },
+                    "count" : {
+                        "$sum" : 1.0
+                    },
+                    "total_awards" : {
+                        "$sum" : "$total_awards"
+                    },
+                    "total_score" : {
+                        "$sum" : "$score"
+                    }
+                }
+            },
+            {
+                "$project" : {
+                    "_id" : 0.0,
+                    "field1" : {
+                        "$cond" : {
+                            "if" : {
+                                "$eq" : [
+                                    "$_id.field1",
+                                    0.0
+                                ]
+                            },
+                            "then" : "Removed",
+                            "else" : "Active"
+                        }
+                    },
+                    "gold" : {
+                        "$cond" : {
+                            "if" : {
+                                "$eq" : [
+                                    {
+                                        "$size" : "$_id.field2"
+                                    },
+                                    0.0
+                                ]
+                            },
+                            "then" : false,
+                            "else" : {
+                                "$arrayElemAt" : [
+                                    "$_id.field2",
+                                    0.0
+                                ]
+                            }
+                        }
+                    },
+                    "count" : 1.0,
+                    "total_awards" : 1.0,
+                    "total_score" : 1.0
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : {
+                        "field1" : "$field1",
+                        "field2" : "$gold"
+                    },
+                    "count" : {
+                        "$sum" : "$count"
+                    },
+                    "total_awards" : {
+                        "$sum" : "$total_awards"
+                    },
+                    "total_score" : {
+                        "$sum" : "$total_score"
+                    }
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

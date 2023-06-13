@@ -1,0 +1,15 @@
+1.Controvercy :
+Za svaki komentar pronaći post na koji je komentar originalno ostavljen i potom izračunati sumu nekoliko metrika svih komentara za svaki post.
+
+2.LastYearStats:
+Za svakog korisnika pronaći komentare koje je ostavio u toku prethodne godine i obračunati broj komentara, broj nagrada, ukupan rezultat, broj kontroverznih komentara kao i spisak svih nagrada.
+
+3.Percentage:
+Za svaki tip posta (flair) pronaći 10 najbolje ocenjenih komentara i njihove autore, ukoliko postoje, i sračunati koliki udeo ukupne karme korisnika sačinjava score-a tog komentara.
+
+4.User Awards:
+Za svakog korisnika pronaći sve njegove komentare i prikazati ime korisnika, tip nagrade koja mu je dodeljena, broj dodeljivanja nagrade, broj dana premijum statusa koje je zaradio od tog tipa nagrade   
+i ukupan broj zarađenih novčića za tu nagradu.
+
+5.User Comparison:
+Za svaki tip korisnika u 2 kategorije (obrisan i zlatni status) odrediti broj korisnika koji pripadaju toj kategoriji, ukupan broj nagrada korisnika i ukupan broj ostvarnih bodova.

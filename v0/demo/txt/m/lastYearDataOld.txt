@@ -1,0 +1,423 @@
+db.getCollection("comment_data").aggregate([
+{
+        $lookup:
+         {
+           from:"user_data",
+           localField: "author",
+           foreignField: "name",
+           as: "user"
+           
+         }
+    },
+    {
+       $addFields: {
+                dateField: { $toDate: { $multiply: [ "$created_utc", 1000 ] } }
+        } 
+    },
+    {
+        $match: {
+            dateField: { $gte: ISODate("2022-01-01"), $lt: ISODate("2023-01-01") }
+        }
+    },
+    {
+        $project:{
+            _id:0,
+            created_utc:0,
+            subreddit:0,
+            author:0,
+            parent_id:0,
+            body:0 
+        }
+    },
+    {
+        $project:{
+            user:{$cond: {
+          if: { $eq: [{$size:"$user"}, 0] },
+          then: { name: "Removed" },
+          else: { $arrayElemAt: [ "$user", 0 ] }
+        }},
+        _id:0,
+        total_awards:1,
+        awards:1,
+        downvotes:1,
+        upvotes:1,
+        controversiality:1,
+        url:1,
+        score:1,
+        dateField:1
+        }
+    },
+    {
+        $group: {
+            _id: "$user.name",
+            count: { $sum: 1 },
+            total_awards: { $sum: "$total_awards" }, // Calculate the average of another field within the array
+            total_score: { $sum: "$score" }, // Find the maximum value of a field within the array
+            total_controvertiality:{$sum:"$controversiality"},
+            awards: { $push: "$awards" }
+        }
+    }
+]).explain("executionStats")
+
+
+
+===================================================================================
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.comment_data",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "5596A9B5",
+                    "planCacheKey" : "5596A9B5",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "awards" : 1.0,
+                            "controversiality" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "downvotes" : 1.0,
+                            "score" : 1.0,
+                            "total_awards" : 1.0,
+                            "upvotes" : 1.0,
+                            "url" : 1.0,
+                            "user" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 46505.0,
+                    "executionTimeMillis" : 1367227.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 46505.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "nReturned" : 46505.0,
+                        "executionTimeMillisEstimate" : 45.0,
+                        "works" : 46507.0,
+                        "advanced" : 46505.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 53.0,
+                        "restoreState" : 53.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "awards" : 1.0,
+                            "controversiality" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "downvotes" : 1.0,
+                            "score" : 1.0,
+                            "total_awards" : 1.0,
+                            "upvotes" : 1.0,
+                            "url" : 1.0,
+                            "user" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 46505.0,
+                            "executionTimeMillisEstimate" : 20.0,
+                            "works" : 46507.0,
+                            "advanced" : 46505.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 53.0,
+                            "restoreState" : 53.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 46505.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(76)
+        },
+        {
+            "$lookup" : {
+                "from" : "user_data",
+                "as" : "user",
+                "localField" : "author",
+                "foreignField" : "name"
+            },
+            "totalDocsExamined" : NumberLong(1702873585),
+            "totalKeysExamined" : NumberLong(0),
+            "collectionScans" : NumberLong(93010),
+            "indexesUsed" : [
+
+            ],
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(1366620)
+        },
+        {
+            "$addFields" : {
+                "dateField" : {
+                    "$convert" : {
+                        "input" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                {
+                                    "$const" : 1000.0
+                                }
+                            ]
+                        },
+                        "to" : {
+                            "$const" : "date"
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(1367004)
+        },
+        {
+            "$match" : {
+                "$and" : [
+                    {
+                        "dateField" : {
+                            "$gte" : ISODate("2022-01-01T00:00:00.000+0000")
+                        }
+                    },
+                    {
+                        "dateField" : {
+                            "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                        }
+                    }
+                ]
+            },
+            "nReturned" : NumberLong(4570),
+            "executionTimeMillisEstimate" : NumberLong(1367148)
+        },
+        {
+            "$project" : {
+                "_id" : false,
+                "subreddit" : false,
+                "author" : false,
+                "parent_id" : false,
+                "body" : false,
+                "created_utc" : false
+            },
+            "nReturned" : NumberLong(4570),
+            "executionTimeMillisEstimate" : NumberLong(1367163)
+        },
+        {
+            "$project" : {
+                "dateField" : true,
+                "awards" : true,
+                "controversiality" : true,
+                "downvotes" : true,
+                "total_awards" : true,
+                "url" : true,
+                "score" : true,
+                "upvotes" : true,
+                "user" : {
+                    "$cond" : [
+                        {
+                            "$eq" : [
+                                {
+                                    "$size" : [
+                                        "$user"
+                                    ]
+                                },
+                                {
+                                    "$const" : 0.0
+                                }
+                            ]
+                        },
+                        {
+                            "$const" : {
+                                "name" : "Removed"
+                            }
+                        },
+                        {
+                            "$arrayElemAt" : [
+                                "$user",
+                                {
+                                    "$const" : 0.0
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "_id" : false
+            },
+            "nReturned" : NumberLong(4570),
+            "executionTimeMillisEstimate" : NumberLong(1367200)
+        },
+        {
+            "$group" : {
+                "_id" : "$user.name",
+                "count" : {
+                    "$sum" : {
+                        "$const" : 1.0
+                    }
+                },
+                "total_awards" : {
+                    "$sum" : "$total_awards"
+                },
+                "total_score" : {
+                    "$sum" : "$score"
+                },
+                "total_controvertiality" : {
+                    "$sum" : "$controversiality"
+                },
+                "awards" : {
+                    "$push" : "$awards"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "count" : NumberLong(328400),
+                "total_awards" : NumberLong(328400),
+                "total_score" : NumberLong(328400),
+                "total_controvertiality" : NumberLong(328400),
+                "awards" : NumberLong(668478)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(2129159),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(4105),
+            "executionTimeMillisEstimate" : NumberLong(1367224)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "comment_data",
+        "pipeline" : [
+            {
+                "$lookup" : {
+                    "from" : "user_data",
+                    "localField" : "author",
+                    "foreignField" : "name",
+                    "as" : "user"
+                }
+            },
+            {
+                "$addFields" : {
+                    "dateField" : {
+                        "$toDate" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                1000.0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$match" : {
+                    "dateField" : {
+                        "$gte" : ISODate("2022-01-01T00:00:00.000+0000"),
+                        "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                    }
+                }
+            },
+            {
+                "$project" : {
+                    "_id" : 0.0,
+                    "created_utc" : 0.0,
+                    "subreddit" : 0.0,
+                    "author" : 0.0,
+                    "parent_id" : 0.0,
+                    "body" : 0.0
+                }
+            },
+            {
+                "$project" : {
+                    "user" : {
+                        "$cond" : {
+                            "if" : {
+                                "$eq" : [
+                                    {
+                                        "$size" : "$user"
+                                    },
+                                    0.0
+                                ]
+                            },
+                            "then" : {
+                                "name" : "Removed"
+                            },
+                            "else" : {
+                                "$arrayElemAt" : [
+                                    "$user",
+                                    0.0
+                                ]
+                            }
+                        }
+                    },
+                    "_id" : 0.0,
+                    "total_awards" : 1.0,
+                    "awards" : 1.0,
+                    "downvotes" : 1.0,
+                    "upvotes" : 1.0,
+                    "controversiality" : 1.0,
+                    "url" : 1.0,
+                    "score" : 1.0,
+                    "dateField" : 1.0
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$user.name",
+                    "count" : {
+                        "$sum" : 1.0
+                    },
+                    "total_awards" : {
+                        "$sum" : "$total_awards"
+                    },
+                    "total_score" : {
+                        "$sum" : "$score"
+                    },
+                    "total_controvertiality" : {
+                        "$sum" : "$controversiality"
+                    },
+                    "awards" : {
+                        "$push" : "$awards"
+                    }
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

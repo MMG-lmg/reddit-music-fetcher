@@ -1,0 +1,262 @@
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.reformated_posts2",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "5DC75737",
+                    "planCacheKey" : "5DC75737",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "transformBy" : {
+                            "_id" : 1.0,
+                            "comments" : 1.0,
+                            "created_date" : 1.0,
+                            "dateRange" : 1.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 989.0,
+                    "executionTimeMillis" : 568.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "nReturned" : 989.0,
+                        "executionTimeMillisEstimate" : 0.0,
+                        "works" : 991.0,
+                        "advanced" : 989.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 90.0,
+                        "restoreState" : 90.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "_id" : 1.0,
+                            "comments" : 1.0,
+                            "created_date" : 1.0,
+                            "dateRange" : 1.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 989.0,
+                            "executionTimeMillisEstimate" : 0.0,
+                            "works" : 991.0,
+                            "advanced" : 989.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 90.0,
+                            "restoreState" : 90.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 989.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(215)
+        },
+        {
+            "$unwind" : {
+                "path" : "$comments"
+            },
+            "nReturned" : NumberLong(299781),
+            "executionTimeMillisEstimate" : NumberLong(308)
+        },
+        {
+            "$addFields" : {
+                "dateRange" : {
+                    "$dateDiff" : {
+                        "startDate" : "$comments.created_date",
+                        "endDate" : "$created_date",
+                        "unit" : {
+                            "$const" : "millisecond"
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(299781),
+            "executionTimeMillisEstimate" : NumberLong(467)
+        },
+        {
+            "$group" : {
+                "_id" : "$_id",
+                "min" : {
+                    "$min" : "$dateRange"
+                },
+                "max" : {
+                    "$max" : "$dateRange"
+                },
+                "minDocument" : {
+                    "$first" : {
+                        "$cond" : [
+                            {
+                                "$eq" : [
+                                    "$dateRange",
+                                    {
+                                        "$min" : [
+                                            "$dateRange"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "$comments.body",
+                            {
+                                "$const" : null
+                            }
+                        ]
+                    }
+                },
+                "minAuthor" : {
+                    "$first" : {
+                        "$cond" : [
+                            {
+                                "$eq" : [
+                                    "$dateRange",
+                                    {
+                                        "$min" : [
+                                            "$dateRange"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "$comments.author.name",
+                            {
+                                "$const" : null
+                            }
+                        ]
+                    }
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "min" : NumberLong(55384),
+                "max" : NumberLong(55384),
+                "minDocument" : NumberLong(277811),
+                "minAuthor" : NumberLong(67696)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(564076),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(566)
+        },
+        {
+            "$sort" : {
+                "sortKey" : {
+                    "min" : -1.0
+                }
+            },
+            "totalDataSizeSortedBytesEstimate" : NumberLong(571988),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(566)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "reformated_posts2",
+        "pipeline" : [
+            {
+                "$unwind" : "$comments"
+            },
+            {
+                "$addFields" : {
+                    "dateRange" : {
+                        "$dateDiff" : {
+                            "startDate" : "$comments.created_date",
+                            "endDate" : "$created_date",
+                            "unit" : "millisecond"
+                        }
+                    }
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$_id",
+                    "min" : {
+                        "$min" : "$dateRange"
+                    },
+                    "max" : {
+                        "$max" : "$dateRange"
+                    },
+                    "minDocument" : {
+                        "$first" : {
+                            "$cond" : [
+                                {
+                                    "$eq" : [
+                                        "$dateRange",
+                                        {
+                                            "$min" : "$dateRange"
+                                        }
+                                    ]
+                                },
+                                "$comments.body",
+                                null
+                            ]
+                        }
+                    },
+                    "minAuthor" : {
+                        "$first" : {
+                            "$cond" : [
+                                {
+                                    "$eq" : [
+                                        "$dateRange",
+                                        {
+                                            "$min" : "$dateRange"
+                                        }
+                                    ]
+                                },
+                                "$comments.author.name",
+                                null
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$sort" : {
+                    "min" : -1.0
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

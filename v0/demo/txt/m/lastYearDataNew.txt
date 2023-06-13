@@ -1,0 +1,242 @@
+db.reformated_posts2.aggregate([
+    {
+      $project:{
+          comments:1
+      }  
+    },
+    {
+      $unwind:"$comments"
+    },
+    {
+        $match: {
+            "comments.created_date": { $gte: ISODate("2022-01-01"), $lt: ISODate("2023-01-01") }
+        }
+    },
+    {
+    $match: {
+      "comments.author.id": { $exists: true}
+        }
+    },
+    {
+        $group:{
+            _id:"$comments.author.name",
+            count: { $sum: 1 },
+            total_awards: { $sum: "$comments.total_awards" }, // Calculate the average of another field within the array
+            total_score: { $sum: "$comments.score" }, // Find the maximum value of a field within the array
+            total_controvertiality:{$sum:"$comments.controversiality"},
+            awards: { $push: "$comments.awards" }    
+        }
+    }
+]).explain("executionStats")
+
+
+========================================================
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.reformated_posts2",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "4CB6BD8F",
+                    "planCacheKey" : "4CB6BD8F",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "transformBy" : {
+                            "_id" : true,
+                            "comments" : true
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 989.0,
+                    "executionTimeMillis" : 947.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "nReturned" : 989.0,
+                        "executionTimeMillisEstimate" : 16.0,
+                        "works" : 991.0,
+                        "advanced" : 989.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 91.0,
+                        "restoreState" : 91.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "_id" : true,
+                            "comments" : true
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 989.0,
+                            "executionTimeMillisEstimate" : 1.0,
+                            "works" : 991.0,
+                            "advanced" : 989.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 91.0,
+                            "restoreState" : 91.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 989.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(25)
+        },
+        {
+            "$unwind" : {
+                "path" : "$comments"
+            },
+            "nReturned" : NumberLong(299781),
+            "executionTimeMillisEstimate" : NumberLong(139)
+        },
+        {
+            "$match" : {
+                "$and" : [
+                    {
+                        "comments.author.id" : {
+                            "$exists" : true
+                        }
+                    },
+                    {
+                        "comments.created_date" : {
+                            "$gte" : ISODate("2022-01-01T00:00:00.000+0000")
+                        }
+                    },
+                    {
+                        "comments.created_date" : {
+                            "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                        }
+                    }
+                ]
+            },
+            "nReturned" : NumberLong(25898),
+            "executionTimeMillisEstimate" : NumberLong(866)
+        },
+        {
+            "$group" : {
+                "_id" : "$comments.author.name",
+                "count" : {
+                    "$sum" : {
+                        "$const" : 1.0
+                    }
+                },
+                "total_awards" : {
+                    "$sum" : "$comments.total_awards"
+                },
+                "total_score" : {
+                    "$sum" : "$comments.score"
+                },
+                "total_controvertiality" : {
+                    "$sum" : "$comments.controversiality"
+                },
+                "awards" : {
+                    "$push" : "$comments.awards"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "count" : NumberLong(305120),
+                "total_awards" : NumberLong(305120),
+                "total_score" : NumberLong(305120),
+                "total_controvertiality" : NumberLong(305120),
+                "awards" : NumberLong(2553448)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(3909442),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(3814),
+            "executionTimeMillisEstimate" : NumberLong(942)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "reformated_posts2",
+        "pipeline" : [
+            {
+                "$project" : {
+                    "comments" : 1.0
+                }
+            },
+            {
+                "$unwind" : "$comments"
+            },
+            {
+                "$match" : {
+                    "comments.created_date" : {
+                        "$gte" : ISODate("2022-01-01T00:00:00.000+0000"),
+                        "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                    }
+                }
+            },
+            {
+                "$match" : {
+                    "comments.author.id" : {
+                        "$exists" : true
+                    }
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$comments.author.name",
+                    "count" : {
+                        "$sum" : 1.0
+                    },
+                    "total_awards" : {
+                        "$sum" : "$comments.total_awards"
+                    },
+                    "total_score" : {
+                        "$sum" : "$comments.score"
+                    },
+                    "total_controvertiality" : {
+                        "$sum" : "$comments.controversiality"
+                    },
+                    "awards" : {
+                        "$push" : "$comments.awards"
+                    }
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

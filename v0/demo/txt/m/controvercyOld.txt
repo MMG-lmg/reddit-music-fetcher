@@ -1,0 +1,311 @@
+db.getCollection("comment_data").aggregate([
+        {
+            $addFields: {
+                deleted: {
+                    $cond: { if: { $or: [ { body: "[deleted]" }, { body: "[removed]" } ] }, then: 1, else: 0 }
+                },
+                secondSubstring: {$arrayElemAt: [{ $split: ["$parent_id", "_"]}, 1]}
+            }
+        },
+        {
+            $lookup:
+             {
+               from:"post_data",
+               localField: "secondSubstring",
+               foreignField: "id",
+               as: "postData"
+             }
+         },
+        {
+          $group:
+            {
+              _id: "$parent_id", // Group key
+              total_awards: {$sum:"$total_awards"},
+              total_downvotes: {$sum:"$downvotes"},
+              total_upvotes: {$sum:"$upvotes"},
+              total_score:{$sum:"$score"},
+              total_controversial:{$sum:"$controversiality"},
+              total_deleted:{$sum:"$deleted"},
+            }
+        },
+        { $sort: { total_controversial: 1,total_deleted : 1, total_score: -1, total_awards: -1 } },
+]).explain("executionStats")
+
+=================================================================================================
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.comment_data",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "AA5F171D",
+                    "planCacheKey" : "AA5F171D",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "transformBy" : {
+                            "controversiality" : 1.0,
+                            "deleted" : 1.0,
+                            "downvotes" : 1.0,
+                            "parent_id" : 1.0,
+                            "score" : 1.0,
+                            "secondSubstring" : 1.0,
+                            "total_awards" : 1.0,
+                            "upvotes" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 46505.0,
+                    "executionTimeMillis" : 38415.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 46505.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "nReturned" : 46505.0,
+                        "executionTimeMillisEstimate" : 37.0,
+                        "works" : 46507.0,
+                        "advanced" : 46505.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 50.0,
+                        "restoreState" : 50.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "controversiality" : 1.0,
+                            "deleted" : 1.0,
+                            "downvotes" : 1.0,
+                            "parent_id" : 1.0,
+                            "score" : 1.0,
+                            "secondSubstring" : 1.0,
+                            "total_awards" : 1.0,
+                            "upvotes" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 46505.0,
+                            "executionTimeMillisEstimate" : 17.0,
+                            "works" : 46507.0,
+                            "advanced" : 46505.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 50.0,
+                            "restoreState" : 50.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 46505.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(62)
+        },
+        {
+            "$addFields" : {
+                "deleted" : {
+                    "$const" : 1.0
+                },
+                "secondSubstring" : {
+                    "$arrayElemAt" : [
+                        {
+                            "$split" : [
+                                "$parent_id",
+                                {
+                                    "$const" : "_"
+                                }
+                            ]
+                        },
+                        {
+                            "$const" : 1.0
+                        }
+                    ]
+                }
+            },
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(177)
+        },
+        {
+            "$lookup" : {
+                "from" : "post_data",
+                "as" : "postData",
+                "localField" : "secondSubstring",
+                "foreignField" : "id"
+            },
+            "totalDocsExamined" : NumberLong(45993445),
+            "totalKeysExamined" : NumberLong(0),
+            "collectionScans" : NumberLong(93010),
+            "indexesUsed" : [
+
+            ],
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(38235)
+        },
+        {
+            "$group" : {
+                "_id" : "$parent_id",
+                "total_awards" : {
+                    "$sum" : "$total_awards"
+                },
+                "total_downvotes" : {
+                    "$sum" : "$downvotes"
+                },
+                "total_upvotes" : {
+                    "$sum" : "$upvotes"
+                },
+                "total_score" : {
+                    "$sum" : "$score"
+                },
+                "total_controversial" : {
+                    "$sum" : "$controversiality"
+                },
+                "total_deleted" : {
+                    "$sum" : "$deleted"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "total_awards" : NumberLong(79120),
+                "total_downvotes" : NumberLong(79120),
+                "total_upvotes" : NumberLong(79120),
+                "total_score" : NumberLong(79120),
+                "total_controversial" : NumberLong(79120),
+                "total_deleted" : NumberLong(79120)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(614169),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(38413)
+        },
+        {
+            "$sort" : {
+                "sortKey" : {
+                    "total_controversial" : 1.0,
+                    "total_deleted" : 1.0,
+                    "total_score" : -1.0,
+                    "total_awards" : -1.0
+                }
+            },
+            "totalDataSizeSortedBytesEstimate" : NumberLong(724937),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(38415)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "comment_data",
+        "pipeline" : [
+            {
+                "$addFields" : {
+                    "deleted" : {
+                        "$cond" : {
+                            "if" : {
+                                "$or" : [
+                                    {
+                                        "body" : "[deleted]"
+                                    },
+                                    {
+                                        "body" : "[removed]"
+                                    }
+                                ]
+                            },
+                            "then" : 1.0,
+                            "else" : 0.0
+                        }
+                    },
+                    "secondSubstring" : {
+                        "$arrayElemAt" : [
+                            {
+                                "$split" : [
+                                    "$parent_id",
+                                    "_"
+                                ]
+                            },
+                            1.0
+                        ]
+                    }
+                }
+            },
+            {
+                "$lookup" : {
+                    "from" : "post_data",
+                    "localField" : "secondSubstring",
+                    "foreignField" : "id",
+                    "as" : "postData"
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$parent_id",
+                    "total_awards" : {
+                        "$sum" : "$total_awards"
+                    },
+                    "total_downvotes" : {
+                        "$sum" : "$downvotes"
+                    },
+                    "total_upvotes" : {
+                        "$sum" : "$upvotes"
+                    },
+                    "total_score" : {
+                        "$sum" : "$score"
+                    },
+                    "total_controversial" : {
+                        "$sum" : "$controversiality"
+                    },
+                    "total_deleted" : {
+                        "$sum" : "$deleted"
+                    }
+                }
+            },
+            {
+                "$sort" : {
+                    "total_controversial" : 1.0,
+                    "total_deleted" : 1.0,
+                    "total_score" : -1.0,
+                    "total_awards" : -1.0
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

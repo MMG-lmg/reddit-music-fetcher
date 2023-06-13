@@ -1,0 +1,319 @@
+db.getCollection("comment_data").aggregate([
+    {
+        $lookup:
+         {
+           from:"user_data",
+           localField: "author",
+           foreignField: "name",
+           as: "user"
+         }
+    },
+    {
+    $match: {
+      user: { $exists: true, $ne: [] } 
+        }
+    },
+    {
+        $unwind:"$user"
+    },
+    {
+        $unwind:"$awards"
+    },
+    {
+        $group: {
+          _id: {
+              user:"$user.name",
+              awards_name:"$awards.name"
+          },
+          count: { $sum: 1 },
+          days_of_premium:{$sum:{$ifNull: ["$awards.days_of_premium", 0]}},
+          coins: {$addToSet:"$awards.coin_price"}
+        }  
+    },
+    {
+    $addFields: {
+      totalEarnings: { $multiply: ["$count", { $arrayElemAt: ["$coins", 0] }] }
+    }
+  }
+    
+]).explain("executionStats")
+
+
+
+=================================================================================
+
+
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.comment_data",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "D7AFE05D",
+                    "planCacheKey" : "D7AFE05D",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "awards" : 1.0,
+                            "user" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 46505.0,
+                    "executionTimeMillis" : 1339694.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 46505.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_SIMPLE",
+                        "nReturned" : 46505.0,
+                        "executionTimeMillisEstimate" : 43.0,
+                        "works" : 46507.0,
+                        "advanced" : 46505.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 48.0,
+                        "restoreState" : 48.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "author" : 1.0,
+                            "awards" : 1.0,
+                            "user" : 1.0,
+                            "_id" : 0.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "nReturned" : 46505.0,
+                            "executionTimeMillisEstimate" : 18.0,
+                            "works" : 46507.0,
+                            "advanced" : 46505.0,
+                            "needTime" : 1.0,
+                            "needYield" : 0.0,
+                            "saveState" : 48.0,
+                            "restoreState" : 48.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 46505.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(74)
+        },
+        {
+            "$lookup" : {
+                "from" : "user_data",
+                "as" : "user",
+                "localField" : "author",
+                "foreignField" : "name"
+            },
+            "totalDocsExamined" : NumberLong(1702873585),
+            "totalKeysExamined" : NumberLong(0),
+            "collectionScans" : NumberLong(93010),
+            "indexesUsed" : [
+
+            ],
+            "nReturned" : NumberLong(46505),
+            "executionTimeMillisEstimate" : NumberLong(1339204)
+        },
+        {
+            "$match" : {
+                "$and" : [
+                    {
+                        "user" : {
+                            "$exists" : true
+                        }
+                    },
+                    {
+                        "user" : {
+                            "$not" : {
+                                "$eq" : [
+
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            "nReturned" : NumberLong(40655),
+            "executionTimeMillisEstimate" : NumberLong(1339483)
+        },
+        {
+            "$unwind" : {
+                "path" : "$user"
+            },
+            "nReturned" : NumberLong(40999),
+            "executionTimeMillisEstimate" : NumberLong(1339534)
+        },
+        {
+            "$unwind" : {
+                "path" : "$awards"
+            },
+            "nReturned" : NumberLong(2129),
+            "executionTimeMillisEstimate" : NumberLong(1339660)
+        },
+        {
+            "$group" : {
+                "_id" : {
+                    "user" : "$user.name",
+                    "awards_name" : "$awards.name"
+                },
+                "count" : {
+                    "$sum" : {
+                        "$const" : 1.0
+                    }
+                },
+                "days_of_premium" : {
+                    "$sum" : {
+                        "$ifNull" : [
+                            "$awards.days_of_premium",
+                            {
+                                "$const" : 0.0
+                            }
+                        ]
+                    }
+                },
+                "coins" : {
+                    "$addToSet" : "$awards.coin_price"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "count" : NumberLong(159680),
+                "days_of_premium" : NumberLong(159680),
+                "coins" : NumberLong(223568)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(1228796),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(1996),
+            "executionTimeMillisEstimate" : NumberLong(1339689)
+        },
+        {
+            "$addFields" : {
+                "totalEarnings" : {
+                    "$multiply" : [
+                        "$count",
+                        {
+                            "$arrayElemAt" : [
+                                "$coins",
+                                {
+                                    "$const" : 0.0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "nReturned" : NumberLong(1996),
+            "executionTimeMillisEstimate" : NumberLong(1339690)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "comment_data",
+        "pipeline" : [
+            {
+                "$lookup" : {
+                    "from" : "user_data",
+                    "localField" : "author",
+                    "foreignField" : "name",
+                    "as" : "user"
+                }
+            },
+            {
+                "$match" : {
+                    "user" : {
+                        "$exists" : true,
+                        "$ne" : [
+
+                        ]
+                    }
+                }
+            },
+            {
+                "$unwind" : "$user"
+            },
+            {
+                "$unwind" : "$awards"
+            },
+            {
+                "$group" : {
+                    "_id" : {
+                        "user" : "$user.name",
+                        "awards_name" : "$awards.name"
+                    },
+                    "count" : {
+                        "$sum" : 1.0
+                    },
+                    "days_of_premium" : {
+                        "$sum" : {
+                            "$ifNull" : [
+                                "$awards.days_of_premium",
+                                0.0
+                            ]
+                        }
+                    },
+                    "coins" : {
+                        "$addToSet" : "$awards.coin_price"
+                    }
+                }
+            },
+            {
+                "$addFields" : {
+                    "totalEarnings" : {
+                        "$multiply" : [
+                            "$count",
+                            {
+                                "$arrayElemAt" : [
+                                    "$coins",
+                                    0.0
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

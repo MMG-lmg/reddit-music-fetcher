@@ -1,0 +1,324 @@
+db.getCollection("reformated_posts2").aggregate([
+    {
+      $addFields:
+        {
+          stats:{
+            $reduce: {
+                input: "$comments",
+                initialValue: { total_awards: 0, total_downvotes: 0, total_upvotes: 0,total_score: 0,total_controversial: 0,total_deleted: 0},
+                in: {
+                    total_awards: { $add: ["$$value.total_awards", "$$this.total_awards"] },
+                    total_downvotes: { $add: ["$$value.total_downvotes", "$$this.downvotes"] },
+                    total_upvotes: { $add: ["$$value.total_upvotes", "$$this.upvotes"] },
+                    total_score: { $add: ["$$value.total_score", "$$this.score"] },
+                    total_controversial: { $add: ["$$value.total_controversial", "$$this.controversiality"] },
+                    total_deleted: { $add: ["$$value.total_deleted", {$cond:[{eq:["$$value.body","[deleted]"]},1,0]}] },
+                }
+            }
+          }
+        }
+    },
+    {
+      $addFields:{
+          "total_awards" :"$stats.total_awards",
+          "total_downvotes" :"$stats.total_downvotes",
+          "total_upvotes" :"$stats.total_upvotes",
+          "total_score" :"$stats.total_controversial",
+          "total_controversial" :"$stats.total_controversial",
+          "total_deleted" :"$stats.total_deleted",
+      }  
+    },
+    {
+       $project:{
+           _id:0,
+           comments:0,
+           stats:0
+       }
+    }, 
+    { $sort: { total_controversial: 1,total_deleted : 1, total_score: -1, total_awards: -1 } },
+]).explain("executionStats")
+
+
+=================================================================================================
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.reformated_posts2",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+
+                    },
+                    "queryHash" : "17830885",
+                    "planCacheKey" : "17830885",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "COLLSCAN",
+                        "direction" : "forward"
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 989.0,
+                    "executionTimeMillis" : 1143.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 989.0,
+                    "executionStages" : {
+                        "stage" : "COLLSCAN",
+                        "nReturned" : 989.0,
+                        "executionTimeMillisEstimate" : 2.0,
+                        "works" : 991.0,
+                        "advanced" : 989.0,
+                        "needTime" : 1.0,
+                        "needYield" : 0.0,
+                        "saveState" : 93.0,
+                        "restoreState" : 93.0,
+                        "isEOF" : 1.0,
+                        "direction" : "forward",
+                        "docsExamined" : 989.0
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(73)
+        },
+        {
+            "$addFields" : {
+                "stats" : {
+                    "$reduce" : {
+                        "input" : "$comments",
+                        "initialValue" : {
+                            "$const" : {
+                                "total_awards" : 0.0,
+                                "total_downvotes" : 0.0,
+                                "total_upvotes" : 0.0,
+                                "total_score" : 0.0,
+                                "total_controversial" : 0.0,
+                                "total_deleted" : 0.0
+                            }
+                        },
+                        "in" : {
+                            "total_awards" : {
+                                "$add" : [
+                                    "$$value.total_awards",
+                                    "$$this.total_awards"
+                                ]
+                            },
+                            "total_downvotes" : {
+                                "$add" : [
+                                    "$$value.total_downvotes",
+                                    "$$this.downvotes"
+                                ]
+                            },
+                            "total_upvotes" : {
+                                "$add" : [
+                                    "$$value.total_upvotes",
+                                    "$$this.upvotes"
+                                ]
+                            },
+                            "total_score" : {
+                                "$add" : [
+                                    "$$value.total_score",
+                                    "$$this.score"
+                                ]
+                            },
+                            "total_controversial" : {
+                                "$add" : [
+                                    "$$value.total_controversial",
+                                    "$$this.controversiality"
+                                ]
+                            },
+                            "total_deleted" : {
+                                "$add" : [
+                                    "$$value.total_deleted",
+                                    {
+                                        "$cond" : [
+                                            {
+                                                "eq" : [
+                                                    "$$value.body",
+                                                    {
+                                                        "$const" : "[deleted]"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "$const" : 1.0
+                                            },
+                                            {
+                                                "$const" : 0.0
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(1082)
+        },
+        {
+            "$addFields" : {
+                "total_awards" : "$stats.total_awards",
+                "total_downvotes" : "$stats.total_downvotes",
+                "total_upvotes" : "$stats.total_upvotes",
+                "total_score" : "$stats.total_controversial",
+                "total_controversial" : "$stats.total_controversial",
+                "total_deleted" : "$stats.total_deleted"
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(1086)
+        },
+        {
+            "$project" : {
+                "_id" : false,
+                "stats" : false,
+                "comments" : false
+            },
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(1120)
+        },
+        {
+            "$sort" : {
+                "sortKey" : {
+                    "total_controversial" : 1.0,
+                    "total_deleted" : 1.0,
+                    "total_score" : -1.0,
+                    "total_awards" : -1.0
+                }
+            },
+            "totalDataSizeSortedBytesEstimate" : NumberLong(1697139),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(989),
+            "executionTimeMillisEstimate" : NumberLong(1123)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "reformated_posts2",
+        "pipeline" : [
+            {
+                "$addFields" : {
+                    "stats" : {
+                        "$reduce" : {
+                            "input" : "$comments",
+                            "initialValue" : {
+                                "total_awards" : 0.0,
+                                "total_downvotes" : 0.0,
+                                "total_upvotes" : 0.0,
+                                "total_score" : 0.0,
+                                "total_controversial" : 0.0,
+                                "total_deleted" : 0.0
+                            },
+                            "in" : {
+                                "total_awards" : {
+                                    "$add" : [
+                                        "$$value.total_awards",
+                                        "$$this.total_awards"
+                                    ]
+                                },
+                                "total_downvotes" : {
+                                    "$add" : [
+                                        "$$value.total_downvotes",
+                                        "$$this.downvotes"
+                                    ]
+                                },
+                                "total_upvotes" : {
+                                    "$add" : [
+                                        "$$value.total_upvotes",
+                                        "$$this.upvotes"
+                                    ]
+                                },
+                                "total_score" : {
+                                    "$add" : [
+                                        "$$value.total_score",
+                                        "$$this.score"
+                                    ]
+                                },
+                                "total_controversial" : {
+                                    "$add" : [
+                                        "$$value.total_controversial",
+                                        "$$this.controversiality"
+                                    ]
+                                },
+                                "total_deleted" : {
+                                    "$add" : [
+                                        "$$value.total_deleted",
+                                        {
+                                            "$cond" : [
+                                                {
+                                                    "eq" : [
+                                                        "$$value.body",
+                                                        "[deleted]"
+                                                    ]
+                                                },
+                                                1.0,
+                                                0.0
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "$addFields" : {
+                    "total_awards" : "$stats.total_awards",
+                    "total_downvotes" : "$stats.total_downvotes",
+                    "total_upvotes" : "$stats.total_upvotes",
+                    "total_score" : "$stats.total_controversial",
+                    "total_controversial" : "$stats.total_controversial",
+                    "total_deleted" : "$stats.total_deleted"
+                }
+            },
+            {
+                "$project" : {
+                    "_id" : 0.0,
+                    "comments" : 0.0,
+                    "stats" : 0.0
+                }
+            },
+            {
+                "$sort" : {
+                    "total_controversial" : 1.0,
+                    "total_deleted" : 1.0,
+                    "total_score" : -1.0,
+                    "total_awards" : -1.0
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}

@@ -1,0 +1,411 @@
+db.getCollection("comment_data").aggregate([
+{
+        $lookup:
+         {
+           from:"user_data",
+           localField: "author",
+           foreignField: "name",
+           as: "user"
+           
+         }
+    },
+    {
+        $unwind: "$user"
+    }, 
+    {
+       $addFields: {
+                dateField: { $toDate: { $multiply: [ "$created_utc", 1000 ] } }
+        } 
+    },
+    {
+        $match: {
+            dateField: { $gte: ISODate("2020-01-01"), $lt: ISODate("2023-01-01") },
+            score: {$gte: 300},
+            "user.is_suspended": {$in: [false]}
+        }
+    },
+    {
+        //racuna razliku izmedju komentara i posta
+        $addFields:{
+            totalComments: {
+                        $sum: [
+                    "$upvotes", "$downvotes"
+                    ]
+            },
+            activityDifference:{
+                $abs: {
+                    $subtract: [
+                        {
+                             $sum: [
+                    "$upvotes", "$downvotes"
+                    ]
+                        }, 
+                            "$user.total_karma"
+                    ]
+                }
+            }
+        }
+    },
+    {
+         $group:{
+             _id: "$_id",
+             userName:{$addToSet: "$user.name"}, 
+             commentText: {$addToSet: "$body"} , //prvi komentar
+             totalCommentsActivity: {$addToSet: "$totalComments"},
+             totalUserActivity: {$addToSet: "$user.total_karma"},
+             activityDifference: {$addToSet: "$activityDifference"}
+             
+        }
+    },
+    //{ $sort: {activityDifference: -1, totalUserActivity: 1, totalCommentsActivity: 1} }
+]).explain("executionStats")
+
+
+
+======================================================================================
+
+
+
+{
+    "explainVersion" : "1",
+    "stages" : [
+        {
+            "$cursor" : {
+                "queryPlanner" : {
+                    "namespace" : "v0TestData.comment_data",
+                    "indexFilterSet" : false,
+                    "parsedQuery" : {
+                        "score" : {
+                            "$gte" : 300.0
+                        }
+                    },
+                    "queryHash" : "FB39B163",
+                    "planCacheKey" : "FB39B163",
+                    "maxIndexedOrSolutionsReached" : false,
+                    "maxIndexedAndSolutionsReached" : false,
+                    "maxScansToExplodeReached" : false,
+                    "winningPlan" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "transformBy" : {
+                            "_id" : 1.0,
+                            "activityDifference" : 1.0,
+                            "author" : 1.0,
+                            "body" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "downvotes" : 1.0,
+                            "totalComments" : 1.0,
+                            "upvotes" : 1.0,
+                            "user.name" : 1.0,
+                            "user.total_karma" : 1.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "filter" : {
+                                "score" : {
+                                    "$gte" : 300.0
+                                }
+                            },
+                            "direction" : "forward"
+                        }
+                    },
+                    "rejectedPlans" : [
+
+                    ]
+                },
+                "executionStats" : {
+                    "executionSuccess" : true,
+                    "nReturned" : 7449.0,
+                    "executionTimeMillis" : 298853.0,
+                    "totalKeysExamined" : 0.0,
+                    "totalDocsExamined" : 46505.0,
+                    "executionStages" : {
+                        "stage" : "PROJECTION_DEFAULT",
+                        "nReturned" : 7449.0,
+                        "executionTimeMillisEstimate" : 44.0,
+                        "works" : 46507.0,
+                        "advanced" : 7449.0,
+                        "needTime" : 39057.0,
+                        "needYield" : 0.0,
+                        "saveState" : 47.0,
+                        "restoreState" : 47.0,
+                        "isEOF" : 1.0,
+                        "transformBy" : {
+                            "_id" : 1.0,
+                            "activityDifference" : 1.0,
+                            "author" : 1.0,
+                            "body" : 1.0,
+                            "created_utc" : 1.0,
+                            "dateField" : 1.0,
+                            "downvotes" : 1.0,
+                            "totalComments" : 1.0,
+                            "upvotes" : 1.0,
+                            "user.name" : 1.0,
+                            "user.total_karma" : 1.0
+                        },
+                        "inputStage" : {
+                            "stage" : "COLLSCAN",
+                            "filter" : {
+                                "score" : {
+                                    "$gte" : 300.0
+                                }
+                            },
+                            "nReturned" : 7449.0,
+                            "executionTimeMillisEstimate" : 35.0,
+                            "works" : 46507.0,
+                            "advanced" : 7449.0,
+                            "needTime" : 39057.0,
+                            "needYield" : 0.0,
+                            "saveState" : 47.0,
+                            "restoreState" : 47.0,
+                            "isEOF" : 1.0,
+                            "direction" : "forward",
+                            "docsExamined" : 46505.0
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(7449),
+            "executionTimeMillisEstimate" : NumberLong(51)
+        },
+        {
+            "$lookup" : {
+                "from" : "user_data",
+                "as" : "user",
+                "localField" : "author",
+                "foreignField" : "name",
+                "let" : {
+
+                },
+                "pipeline" : [
+                    {
+                        "$match" : {
+                            "is_suspended" : {
+                                "$in" : [
+                                    false
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "unwinding" : {
+                    "preserveNullAndEmptyArrays" : false
+                }
+            },
+            "totalDocsExamined" : NumberLong(272760033),
+            "totalKeysExamined" : NumberLong(0),
+            "collectionScans" : NumberLong(14898),
+            "indexesUsed" : [
+
+            ],
+            "nReturned" : NumberLong(6127),
+            "executionTimeMillisEstimate" : NumberLong(298730)
+        },
+        {
+            "$addFields" : {
+                "dateField" : {
+                    "$convert" : {
+                        "input" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                {
+                                    "$const" : 1000.0
+                                }
+                            ]
+                        },
+                        "to" : {
+                            "$const" : "date"
+                        }
+                    }
+                }
+            },
+            "nReturned" : NumberLong(6127),
+            "executionTimeMillisEstimate" : NumberLong(298780)
+        },
+        {
+            "$match" : {
+                "$and" : [
+                    {
+                        "dateField" : {
+                            "$gte" : ISODate("2020-01-01T00:00:00.000+0000")
+                        }
+                    },
+                    {
+                        "dateField" : {
+                            "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                        }
+                    }
+                ]
+            },
+            "nReturned" : NumberLong(2161),
+            "executionTimeMillisEstimate" : NumberLong(298801)
+        },
+        {
+            "$addFields" : {
+                "totalComments" : {
+                    "$sum" : [
+                        "$upvotes",
+                        "$downvotes"
+                    ]
+                },
+                "activityDifference" : {
+                    "$abs" : [
+                        {
+                            "$subtract" : [
+                                {
+                                    "$sum" : [
+                                        "$upvotes",
+                                        "$downvotes"
+                                    ]
+                                },
+                                "$user.total_karma"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "nReturned" : NumberLong(2161),
+            "executionTimeMillisEstimate" : NumberLong(298817)
+        },
+        {
+            "$group" : {
+                "_id" : "$_id",
+                "userName" : {
+                    "$addToSet" : "$user.name"
+                },
+                "commentText" : {
+                    "$addToSet" : "$body"
+                },
+                "totalCommentsActivity" : {
+                    "$addToSet" : "$totalComments"
+                },
+                "totalUserActivity" : {
+                    "$addToSet" : "$user.total_karma"
+                },
+                "activityDifference" : {
+                    "$addToSet" : "$activityDifference"
+                }
+            },
+            "maxAccumulatorMemoryUsageBytes" : {
+                "userName" : NumberLong(267179),
+                "commentText" : NumberLong(706496),
+                "totalCommentsActivity" : NumberLong(237104),
+                "totalUserActivity" : NumberLong(237472),
+                "activityDifference" : NumberLong(237472)
+            },
+            "totalOutputDataSizeBytes" : NumberLong(2407620),
+            "usedDisk" : false,
+            "spills" : NumberLong(0),
+            "nReturned" : NumberLong(2117),
+            "executionTimeMillisEstimate" : NumberLong(298849)
+        }
+    ],
+    "serverInfo" : {
+        "host" : "DESKTOP-SUCLEPQ",
+        "port" : 27017.0,
+        "version" : "6.0.4",
+        "gitVersion" : "44ff59461c1353638a71e710f385a566bcd2f547"
+    },
+    "serverParameters" : {
+        "internalQueryFacetBufferSizeBytes" : 104857600.0,
+        "internalQueryFacetMaxOutputDocSizeBytes" : 104857600.0,
+        "internalLookupStageIntermediateDocumentMaxSizeBytes" : 104857600.0,
+        "internalDocumentSourceGroupMaxMemoryBytes" : 104857600.0,
+        "internalQueryMaxBlockingSortMemoryUsageBytes" : 104857600.0,
+        "internalQueryProhibitBlockingMergeOnMongoS" : 0.0,
+        "internalQueryMaxAddToSetBytes" : 104857600.0,
+        "internalDocumentSourceSetWindowFieldsMaxMemoryBytes" : 104857600.0
+    },
+    "command" : {
+        "aggregate" : "comment_data",
+        "pipeline" : [
+            {
+                "$lookup" : {
+                    "from" : "user_data",
+                    "localField" : "author",
+                    "foreignField" : "name",
+                    "as" : "user"
+                }
+            },
+            {
+                "$unwind" : "$user"
+            },
+            {
+                "$addFields" : {
+                    "dateField" : {
+                        "$toDate" : {
+                            "$multiply" : [
+                                "$created_utc",
+                                1000.0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$match" : {
+                    "dateField" : {
+                        "$gte" : ISODate("2020-01-01T00:00:00.000+0000"),
+                        "$lt" : ISODate("2023-01-01T00:00:00.000+0000")
+                    },
+                    "score" : {
+                        "$gte" : 300.0
+                    },
+                    "user.is_suspended" : {
+                        "$in" : [
+                            false
+                        ]
+                    }
+                }
+            },
+            {
+                "$addFields" : {
+                    "totalComments" : {
+                        "$sum" : [
+                            "$upvotes",
+                            "$downvotes"
+                        ]
+                    },
+                    "activityDifference" : {
+                        "$abs" : {
+                            "$subtract" : [
+                                {
+                                    "$sum" : [
+                                        "$upvotes",
+                                        "$downvotes"
+                                    ]
+                                },
+                                "$user.total_karma"
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "$group" : {
+                    "_id" : "$_id",
+                    "userName" : {
+                        "$addToSet" : "$user.name"
+                    },
+                    "commentText" : {
+                        "$addToSet" : "$body"
+                    },
+                    "totalCommentsActivity" : {
+                        "$addToSet" : "$totalComments"
+                    },
+                    "totalUserActivity" : {
+                        "$addToSet" : "$user.total_karma"
+                    },
+                    "activityDifference" : {
+                        "$addToSet" : "$activityDifference"
+                    }
+                }
+            }
+        ],
+        "cursor" : {
+
+        },
+        "$db" : "v0TestData"
+    },
+    "ok" : 1.0
+}
